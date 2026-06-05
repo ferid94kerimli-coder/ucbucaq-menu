@@ -351,7 +351,11 @@ def index():
 
 @app.route('/menu')
 def menu():
-    return render_template('menu.html')
+    return render_template('menu.html', menu_user='')
+
+@app.route('/menu/<username>')
+def menu_user(username):
+    return render_template('menu.html', menu_user=username)
 
 @app.route('/admin')
 def admin():
@@ -839,7 +843,7 @@ def api_import_data():
 def api_qr():
     import qrcode
     username = current_user()
-    url = f"{APP_BASE_URL}/menu?u={username}"
+    url = f"{APP_BASE_URL}/menu/{username}"
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_H,

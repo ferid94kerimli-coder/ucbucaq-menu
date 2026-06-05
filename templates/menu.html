@@ -1285,8 +1285,10 @@ function loadLogo() {
   }
 }
 
-// URL-dən ?user= parametrini oxu (məs: /menu?user=ali)
+// Username: Flask /menu/<username> route-dan və ya ?user= param-dan oxu
 var MENU_USER = (function() {
+  var injected = '{{ menu_user | default("") }}';
+  if (injected) return injected;
   var p = new URLSearchParams(window.location.search);
   return p.get('user') || '';
 })();
