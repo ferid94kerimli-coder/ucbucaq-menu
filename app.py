@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from functools import wraps
-import json, os, uuid, secrets, time
+import contextlib, copy, json, os, uuid, secrets, time
 from datetime import datetime, timedelta
 from collections import defaultdict
 from werkzeug.utils import secure_filename
@@ -9,6 +9,7 @@ from flask_mail import Mail, Message
 from PIL import Image
 import io
 import psycopg2
+from psycopg2 import pool as pgpool
 from psycopg2.extras import RealDictCursor
 import cloudinary
 import cloudinary.uploader
@@ -67,76 +68,35 @@ mail = Mail(app)
 ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 # ────────────────────────────────────────────────────────────────
-# PostgreSQL BAĞLANTISI
+# CONNECTION POOL
 # ────────────────────────────────────────────────────────────────
 
-def get_db():
-    """Hər request üçün yeni DB bağlantısı açır."""
-    conn = psycopg2.connect(
-        os.environ.get('DATABASE_URL'),
-        cursor_factory=RealDictCursor
-    )
-    return conn
+_db_pool = None
 
-def init_db():
-    """Cədvəlləri yarat (mövcuddursa keç)."""
-    conn = get_db()
-    cur = conn.cursor()
-
-    # İstifadəçilər cədvəli
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            username             TEXT PRIMARY KEY,
-            password             TEXT NOT NULL,
-            role                 TEXT NOT NULL DEFAULT 'manager',
-            email                TEXT DEFAULT '',
-            must_change_password BOOLEAN NOT NULL DEFAULT FALSE
+def _get_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = pgpool.ThreadedConnectionPool(
+            minconn=2,
+            maxconn=10,
+            dsn=os.environ.get('DATABASE_URL'),
+            cursor_factory=RealDictCursor
         )
-    """)
-    # Köhnə DB-lərdə sütun yoxdursa əlavə et
-    cur.execute("""
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE
-    """)
+    return _db_pool
 
-    # Hər userin menyu datası
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS user_data (
-            username    TEXT PRIMARY KEY REFERENCES users(username) ON DELETE CASCADE,
-            data        JSONB NOT NULL DEFAULT '{}'
-        )
-    """)
-
-    # Şifrə sıfırlama tokenləri
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS reset_tokens (
-            token       TEXT PRIMARY KEY,
-            username    TEXT NOT NULL,
-            expires     TIMESTAMP NOT NULL,
-            used        BOOLEAN NOT NULL DEFAULT FALSE
-        )
-    """)
-
-    # Default superadmin yarat (yoxdursa)
-    cur.execute("SELECT 1 FROM users WHERE username = 'admin'")
-    if not cur.fetchone():
-        _admin_pw = os.environ.get('ADMIN_PASSWORD')
-        _must_change = False
-        if not _admin_pw:
-            _admin_pw = secrets.token_urlsafe(14)
-            _must_change = True
-            print(f"[WARN] ADMIN_PASSWORD təyin edilməyib. İlk giriş şifrəsi: {_admin_pw}", flush=True)
-        cur.execute(
-            "INSERT INTO users (username, password, role, email, must_change_password) VALUES (%s, %s, %s, %s, %s)",
-            ('admin', generate_password_hash(_admin_pw), 'superadmin', '', _must_change)
-        )
-        cur.execute(
-            "INSERT INTO user_data (username, data) VALUES (%s, %s)",
-            ('admin', json.dumps(DEFAULT_MENU_DATA))
-        )
-
-    conn.commit()
-    cur.close()
-    conn.close()
+@contextlib.contextmanager
+def db_conn():
+    """Pool-dan connection götür, commit et, qaytar."""
+    pool = _get_pool()
+    conn = pool.getconn()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        pool.putconn(conn)
 
 # ────────────────────────────────────────────────────────────────
 # DEFAULT MENYU STRUKTURU
@@ -169,16 +129,66 @@ DEFAULT_MENU_DATA = {
 }
 
 # ────────────────────────────────────────────────────────────────
-# İSTİFADƏÇİ ƏMƏLIYYATLARI (PostgreSQL)
+# DB BAŞLANĞICI
+# ────────────────────────────────────────────────────────────────
+
+def init_db():
+    with db_conn() as conn:
+        cur = conn.cursor()
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                username             TEXT PRIMARY KEY,
+                password             TEXT NOT NULL,
+                role                 TEXT NOT NULL DEFAULT 'manager',
+                email                TEXT DEFAULT '',
+                must_change_password BOOLEAN NOT NULL DEFAULT FALSE
+            )
+        """)
+        cur.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_data (
+                username TEXT PRIMARY KEY REFERENCES users(username) ON DELETE CASCADE,
+                data     JSONB NOT NULL DEFAULT '{}'
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS reset_tokens (
+                token    TEXT PRIMARY KEY,
+                username TEXT NOT NULL,
+                expires  TIMESTAMP NOT NULL,
+                used     BOOLEAN NOT NULL DEFAULT FALSE
+            )
+        """)
+
+        cur.execute("SELECT 1 FROM users WHERE username = 'admin'")
+        if not cur.fetchone():
+            _admin_pw = os.environ.get('ADMIN_PASSWORD')
+            _must_change = False
+            if not _admin_pw:
+                _admin_pw = secrets.token_urlsafe(14)
+                _must_change = True
+                print(f"[WARN] ADMIN_PASSWORD təyin edilməyib. İlk giriş şifrəsi: {_admin_pw}", flush=True)
+            cur.execute(
+                "INSERT INTO users (username, password, role, email, must_change_password) VALUES (%s,%s,%s,%s,%s)",
+                ('admin', generate_password_hash(_admin_pw), 'superadmin', '', _must_change)
+            )
+            cur.execute(
+                "INSERT INTO user_data (username, data) VALUES (%s,%s)",
+                ('admin', json.dumps(DEFAULT_MENU_DATA))
+            )
+
+# ────────────────────────────────────────────────────────────────
+# İSTİFADƏÇİ ƏMƏLIYYATLARI
 # ────────────────────────────────────────────────────────────────
 
 def load_users():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT username, password, role, email, must_change_password FROM users")
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT username, password, role, email, must_change_password FROM users")
+        rows = cur.fetchall()
     return {r['username']: {
         'password': r['password'],
         'role': r['role'],
@@ -187,55 +197,44 @@ def load_users():
     } for r in rows}
 
 def save_user(username, password_hash, role, email=''):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        """INSERT INTO users (username, password, role, email) VALUES (%s,%s,%s,%s)
-           ON CONFLICT (username) DO UPDATE SET password=EXCLUDED.password, role=EXCLUDED.role, email=EXCLUDED.email""",
-        (username, password_hash, role, email)
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """INSERT INTO users (username, password, role, email) VALUES (%s,%s,%s,%s)
+               ON CONFLICT (username) DO UPDATE
+               SET password=EXCLUDED.password, role=EXCLUDED.role, email=EXCLUDED.email""",
+            (username, password_hash, role, email)
+        )
 
 def delete_user(username):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM users WHERE username = %s", (username,))
-    conn.commit()
-    cur.close()
-    conn.close()
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM users WHERE username = %s", (username,))
 
 # ────────────────────────────────────────────────────────────────
-# MENYU DATA ƏMƏLIYYATLARI (PostgreSQL JSONB)
+# MENYU DATA — race-condition-free
 # ────────────────────────────────────────────────────────────────
 
 def load_user_data(username):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT data FROM user_data WHERE username = %s", (username,))
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
-    if row:
-        return row['data']
-    # İlk dəfə — default data yarat
-    import copy
-    data = copy.deepcopy(DEFAULT_MENU_DATA)
-    save_user_data(username, data)
-    return data
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT data FROM user_data WHERE username = %s", (username,))
+        row = cur.fetchone()
+        if row:
+            return row['data']
+        data = copy.deepcopy(DEFAULT_MENU_DATA)
+        cur.execute(
+            "INSERT INTO user_data (username, data) VALUES (%s,%s) ON CONFLICT DO NOTHING",
+            (username, json.dumps(data, ensure_ascii=False))
+        )
+        return data
 
-def save_user_data(username, data):
-    conn = get_db()
-    cur = conn.cursor()
+def _upsert_user_data(cur, username, data):
     cur.execute(
-        """INSERT INTO user_data (username, data) VALUES (%s, %s)
+        """INSERT INTO user_data (username, data) VALUES (%s,%s)
            ON CONFLICT (username) DO UPDATE SET data = EXCLUDED.data""",
         (username, json.dumps(data, ensure_ascii=False))
     )
-    conn.commit()
-    cur.close()
-    conn.close()
 
 # ────────────────────────────────────────────────────────────────
 # KÖMƏKÇİLƏR
@@ -248,7 +247,6 @@ def current_user():
     return session.get('user')
 
 def resize_image(file_obj, max_size=(1200, 1200), quality=82):
-    """Pillow ilə ölçünü kiçilt, bytes olaraq qaytar."""
     img = Image.open(file_obj)
     try:
         from PIL.ExifTags import TAGS
@@ -281,7 +279,6 @@ def resize_image(file_obj, max_size=(1200, 1200), quality=82):
     return buf, 'jpg'
 
 def upload_to_cloudinary(file_obj, folder='ucbucaq', public_id=None, max_size=(1200, 1200)):
-    """Faylı Cloudinary-ə yüklə, URL qaytar."""
     try:
         buf, fmt = resize_image(file_obj, max_size=max_size)
     except Exception:
@@ -385,7 +382,7 @@ def api_get_data():
     if username not in users:
         return jsonify({'error': 'İstifadəçi tapılmadı'}), 404
     db = load_user_data(username)
-    # Başqasının datasına baxan (məs. müştəri) statistikaları görməsin
+    # Müştəri (public) sorğusu — statistikaları gizlət
     if requested_user and requested_user != logged_in:
         return jsonify({k: db[k] for k in ('cafe', 'categories', 'items', 'theme') if k in db})
     return jsonify(db)
@@ -394,13 +391,17 @@ def api_get_data():
 @login_required
 def api_save_data():
     username = current_user()
-    incoming = request.json
-    db = load_user_data(username)
+    incoming = request.json or {}
     allowed_keys = {'cafe', 'categories', 'items', 'theme'}
-    for key in incoming:
-        if key in allowed_keys:
-            db[key] = incoming[key]
-    save_user_data(username, db)
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT data FROM user_data WHERE username = %s FOR UPDATE", (username,))
+        row = cur.fetchone()
+        db = row['data'] if row else copy.deepcopy(DEFAULT_MENU_DATA)
+        for key in incoming:
+            if key in allowed_keys:
+                db[key] = incoming[key]
+        _upsert_user_data(cur, username, db)
     return jsonify({'ok': True})
 
 # ────────────────────────────────────────────────────────────────
@@ -438,10 +439,13 @@ def api_upload_logo():
     try:
         public_id = f"ucbucaq/logos/{secure_filename(username)}"
         url = upload_to_cloudinary(file, public_id=public_id, max_size=(400, 400))
-        # Logo URL-ni DB-yə yaz
-        db = load_user_data(username)
-        db['cafe']['logo'] = url
-        save_user_data(username, db)
+        with db_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT data FROM user_data WHERE username = %s FOR UPDATE", (username,))
+            row = cur.fetchone()
+            db = row['data'] if row else copy.deepcopy(DEFAULT_MENU_DATA)
+            db['cafe']['logo'] = url
+            _upsert_user_data(cur, username, db)
         return jsonify({'ok': True, 'url': url})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -465,7 +469,7 @@ def api_get_users():
 @app.route('/api/users', methods=['POST'])
 @superadmin_required
 def api_add_user():
-    data = request.json
+    data = request.json or {}
     username = data.get('username', '').strip().lower()
     password = data.get('password', '')
     role = data.get('role', 'manager')
@@ -481,9 +485,9 @@ def api_add_user():
         return jsonify({'error': 'Bu istifadəçi artıq mövcuddur'}), 400
 
     save_user(username, generate_password_hash(password), role, email)
-
-    import copy
-    save_user_data(username, copy.deepcopy(DEFAULT_MENU_DATA))
+    with db_conn() as conn:
+        cur = conn.cursor()
+        _upsert_user_data(cur, username, copy.deepcopy(DEFAULT_MENU_DATA))
     return jsonify({'ok': True})
 
 @app.route('/api/users/<username>', methods=['DELETE'])
@@ -499,12 +503,9 @@ def api_delete_user(username):
 def api_update_user_role(username):
     data = request.json or {}
     role = data.get('role', 'manager')
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("UPDATE users SET role = %s WHERE username = %s", (role, username))
-    conn.commit()
-    cur.close()
-    conn.close()
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET role = %s WHERE username = %s", (role, username))
     return jsonify({'ok': True})
 
 @app.route('/api/users/<username>/set-password', methods=['PUT'])
@@ -516,13 +517,12 @@ def api_set_user_password(username):
     password = data.get('password', '')
     if not password or len(password) < 6:
         return jsonify({'error': 'Şifrə ən az 6 simvol olmalıdır'}), 400
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("UPDATE users SET password = %s, must_change_password = FALSE WHERE username = %s",
-                (generate_password_hash(password), username))
-    conn.commit()
-    cur.close()
-    conn.close()
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE users SET password = %s, must_change_password = FALSE WHERE username = %s",
+            (generate_password_hash(password), username)
+        )
     return jsonify({'ok': True})
 
 @app.route('/api/users/<username>/email', methods=['PUT'])
@@ -532,12 +532,9 @@ def api_update_user_email(username):
         return jsonify({'error': 'İcazə yoxdur'}), 403
     data = request.json or {}
     email = data.get('email', '').strip().lower()
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("UPDATE users SET email = %s WHERE username = %s", (email, username))
-    conn.commit()
-    cur.close()
-    conn.close()
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET email = %s WHERE username = %s", (email, username))
     return jsonify({'ok': True})
 
 @app.route('/api/users/<username>/info', methods=['GET'])
@@ -545,18 +542,16 @@ def api_update_user_email(username):
 def api_get_user_info(username):
     if username != current_user() and session.get('role') != 'superadmin':
         return jsonify({'error': 'İcazə yoxdur'}), 403
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT username, email, role FROM users WHERE username = %s", (username,))
-    user = cur.fetchone()
-    cur.close()
-    conn.close()
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT username, email, role FROM users WHERE username = %s", (username,))
+        user = cur.fetchone()
     if not user:
         return jsonify({'error': 'Tapılmadı'}), 404
     return jsonify({'username': user['username'], 'email': user['email'] or '', 'role': user['role']})
 
 # ────────────────────────────────────────────────────────────────
-# STATİSTİKA
+# STATİSTİKA — atomik JSONB yeniləmə
 # ────────────────────────────────────────────────────────────────
 
 _ALLOWED_STAT_TYPES = {'click', 'open', 'cat'}
@@ -572,56 +567,44 @@ def api_track_stats():
     if stat_type not in _ALLOWED_STAT_TYPES:
         return jsonify({'ok': False, 'error': 'Keçərsiz stat növü'}), 400
 
-    # Key uzunluğunu məhdudlaşdır
     item_key = str(data.get('item') or data.get('cat') or '')[:120]
-
-    # İstifadəçi mövcuddursa icazə ver
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
-    exists = cur.fetchone()
-    cur.close()
-    conn.close()
-    if not exists:
-        return jsonify({'ok': False, 'error': 'İstifadəçi tapılmadı'}), 404
-
-    # Statistikanı atomik şəkildə JSONB üzərindən yenilə
-    conn = get_db()
-    cur = conn.cursor()
     today = datetime.now().strftime('%Y-%m-%d')
 
-    if stat_type == 'open':
-        cur.execute("""
-            UPDATE user_data SET data = jsonb_set(
-                jsonb_set(
-                    data,
-                    '{stats,opens,total}',
-                    to_jsonb(COALESCE((data->'stats'->'opens'->>'total')::int, 0) + 1)
-                ),
-                ARRAY['stats','opens','dates',%s],
-                to_jsonb(COALESCE((data->'stats'->'opens'->'dates'->>%s)::int, 0) + 1)
-            ) WHERE username = %s
-        """, (today, today, username))
-    elif stat_type == 'click':
-        cur.execute("""
-            UPDATE user_data SET data = jsonb_set(
-                data,
-                ARRAY['stats','clicks',%s],
-                to_jsonb(COALESCE((data->'stats'->'clicks'->>%s)::int, 0) + 1)
-            ) WHERE username = %s
-        """, (item_key, item_key, username))
-    elif stat_type == 'cat':
-        cur.execute("""
-            UPDATE user_data SET data = jsonb_set(
-                data,
-                ARRAY['stats','cats',%s],
-                to_jsonb(COALESCE((data->'stats'->'cats'->>%s)::int, 0) + 1)
-            ) WHERE username = %s
-        """, (item_key, item_key, username))
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
+        if not cur.fetchone():
+            return jsonify({'ok': False, 'error': 'İstifadəçi tapılmadı'}), 404
 
-    conn.commit()
-    cur.close()
-    conn.close()
+        if stat_type == 'open':
+            cur.execute("""
+                UPDATE user_data SET data = jsonb_set(
+                    jsonb_set(
+                        data,
+                        '{stats,opens,total}',
+                        to_jsonb(COALESCE((data->'stats'->'opens'->>'total')::int, 0) + 1)
+                    ),
+                    ARRAY['stats','opens','dates',%s],
+                    to_jsonb(COALESCE((data->'stats'->'opens'->'dates'->>%s)::int, 0) + 1)
+                ) WHERE username = %s
+            """, (today, today, username))
+        elif stat_type == 'click':
+            cur.execute("""
+                UPDATE user_data SET data = jsonb_set(
+                    data,
+                    ARRAY['stats','clicks',%s],
+                    to_jsonb(COALESCE((data->'stats'->'clicks'->>%s)::int, 0) + 1)
+                ) WHERE username = %s
+            """, (item_key, item_key, username))
+        elif stat_type == 'cat':
+            cur.execute("""
+                UPDATE user_data SET data = jsonb_set(
+                    data,
+                    ARRAY['stats','cats',%s],
+                    to_jsonb(COALESCE((data->'stats'->'cats'->>%s)::int, 0) + 1)
+                ) WHERE username = %s
+            """, (item_key, item_key, username))
+
     return jsonify({'ok': True})
 
 @app.route('/api/stats')
@@ -634,9 +617,13 @@ def api_get_stats():
 @login_required
 def api_clear_stats():
     username = current_user()
-    db = load_user_data(username)
-    db['stats'] = {'clicks': {}, 'opens': {'total': 0, 'dates': {}}, 'cats': {}}
-    save_user_data(username, db)
+    empty = json.dumps({'clicks': {}, 'opens': {'total': 0, 'dates': {}}, 'cats': {}})
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE user_data SET data = jsonb_set(data, '{stats}', %s::jsonb) WHERE username = %s",
+            (empty, username)
+        )
     return jsonify({'ok': True})
 
 # ────────────────────────────────────────────────────────────────
@@ -650,12 +637,10 @@ def api_forgot_password():
     if not username:
         return jsonify({'error': 'İstifadəçi adı daxil edin'}), 400
 
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT username, email FROM users WHERE LOWER(username) = LOWER(%s)", (username,))
-    user = cur.fetchone()
-    cur.close()
-    conn.close()
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT username, email FROM users WHERE LOWER(username) = LOWER(%s)", (username,))
+        user = cur.fetchone()
 
     if not user:
         return jsonify({'error': 'Bu istifadəçi adı tapılmadı'}), 400
@@ -668,15 +653,12 @@ def api_forgot_password():
         token = secrets.token_urlsafe(32)
         expires = datetime.now() + timedelta(hours=1)
 
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO reset_tokens (token, username, expires, used) VALUES (%s,%s,%s,%s)",
-            (token, user['username'], expires, False)
-        )
-        conn.commit()
-        cur.close()
-        conn.close()
+        with db_conn() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO reset_tokens (token, username, expires, used) VALUES (%s,%s,%s,%s)",
+                (token, user['username'], expires, False)
+            )
 
         reset_link = APP_BASE_URL + '/reset-password?token=' + token
         html_body = (
@@ -707,12 +689,10 @@ def api_forgot_password():
 @app.route('/reset-password')
 def reset_password_page():
     token = request.args.get('token', '')
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM reset_tokens WHERE token = %s", (token,))
-    td = cur.fetchone()
-    cur.close()
-    conn.close()
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM reset_tokens WHERE token = %s", (token,))
+        td = cur.fetchone()
 
     if not td:
         return "<h2>❌ Keçərsiz link</h2><a href='/admin'>Admin Panelə qayıt</a>"
@@ -734,27 +714,23 @@ def api_reset_password():
     if len(new_password) < 6:
         return jsonify({'error': 'Şifrə ən az 6 simvol olmalıdır'}), 400
 
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM reset_tokens WHERE token = %s", (token,))
-    td = cur.fetchone()
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM reset_tokens WHERE token = %s", (token,))
+        td = cur.fetchone()
 
-    if not td:
-        cur.close(); conn.close()
-        return jsonify({'error': 'Keçərsiz link'}), 400
-    if td['used']:
-        cur.close(); conn.close()
-        return jsonify({'error': 'Bu link artıq istifadə olunub'}), 400
-    if td['expires'] < datetime.now():
-        cur.close(); conn.close()
-        return jsonify({'error': 'Linkın vaxtı bitib'}), 400
+        if not td:
+            return jsonify({'error': 'Keçərsiz link'}), 400
+        if td['used']:
+            return jsonify({'error': 'Bu link artıq istifadə olunub'}), 400
+        if td['expires'] < datetime.now():
+            return jsonify({'error': 'Linkın vaxtı bitib'}), 400
 
-    cur.execute("UPDATE users SET password = %s, must_change_password = FALSE WHERE username = %s",
-                (generate_password_hash(new_password), td['username']))
-    cur.execute("UPDATE reset_tokens SET used = TRUE WHERE token = %s", (token,))
-    conn.commit()
-    cur.close()
-    conn.close()
+        cur.execute(
+            "UPDATE users SET password = %s, must_change_password = FALSE WHERE username = %s",
+            (generate_password_hash(new_password), td['username'])
+        )
+        cur.execute("UPDATE reset_tokens SET used = TRUE WHERE token = %s", (token,))
 
     return jsonify({'ok': True, 'message': 'Şifrə uğurla yeniləndi'})
 
@@ -762,7 +738,6 @@ def api_reset_password():
 # BAŞLANĞIC
 # ────────────────────────────────────────────────────────────────
 
-# DB cədvəllərini yarat
 try:
     init_db()
 except Exception as e:
