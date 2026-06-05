@@ -297,6 +297,7 @@ input[type=file] { display:none; }
     <div class="nav-item" onclick="showPage('analytics',this)"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Statistika</span></div>
     <div class="nav-item" onclick="showPage('theme',this)"><span class="nav-icon">&#127912;</span><span data-i18n="nav_theme">Görünüş</span></div>
     <div class="nav-item" onclick="showPage('qr',this)"><span class="nav-icon">&#128247;</span><span data-i18n="nav_qr">QR Kod</span></div>
+    <a id="sidebar-preview-link" href="/menu" target="_blank" class="nav-item" style="color:rgba(255,255,255,0.55);text-decoration:none"><span class="nav-icon">👁</span><span>Menyuya bax</span></a>
 
     <div class="nav-item" onclick="showPage('settings',this)"><span class="nav-icon">&#9881;</span><span data-i18n="nav_settings">Ayarlar</span></div>
     <div class="nav-item logout-nav" onclick="doLogout()"><span class="nav-icon">🚪</span><span data-i18n="logout">Çıxış</span></div>
@@ -309,7 +310,10 @@ input[type=file] { display:none; }
 
   <!-- DASHBOARD -->
   <div class="page active" id="page-dashboard">
-    <div class="page-header"><h2 class="page-title" data-i18n="nav_dashboard">Dashboard</h2></div>
+    <div class="page-header">
+      <h2 class="page-title" data-i18n="nav_dashboard">Dashboard</h2>
+      <a id="preview-menu-link" href="/menu" target="_blank" class="btn btn-outline" style="font-size:0.8rem;text-decoration:none">👁 Menyuya bax</a>
+    </div>
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label" data-i18n="stat_items">Məhsullar</div><div class="stat-value" id="stat-items">0</div></div>
       <div class="stat-card"><div class="stat-label" data-i18n="stat_cats">Kateqoriyalar</div><div class="stat-value" id="stat-cats">0</div></div>
@@ -940,6 +944,13 @@ function showAdminUI(username, role) {
   document.querySelectorAll('.superadmin-only').forEach(function(el){
     el.style.display = isSuperAdmin ? (el.classList.contains('drawer-overlay') ? 'none' : 'block') : 'none';
   });
+
+  // Menyu önizləmə linklərini yenilə
+  var previewUrl = '/menu/' + username;
+  var dashLink = document.getElementById('preview-menu-link');
+  var sideLink = document.getElementById('sidebar-preview-link');
+  if (dashLink) dashLink.href = previewUrl;
+  if (sideLink) sideLink.href = previewUrl;
 
   loadFromServer();
 }

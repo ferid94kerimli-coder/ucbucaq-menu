@@ -21,6 +21,10 @@ if not _secret_key:
     raise RuntimeError("SECRET_KEY mühit dəyişəni təyin edilməlidir")
 app.secret_key = _secret_key
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB upload limiti
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_DEBUG', '') not in ('1', 'true')
 
 # ── LOGIN RATE LIMITING ──
 _login_attempts: dict = defaultdict(list)
@@ -833,6 +837,23 @@ def api_import_data():
         'categories': len(data.get('categories', [])),
         'items': len(data.get('items', []))
     })
+
+# ────────────────────────────────────────────────────────────────
+# HEALTH CHECK
+# ────────────────────────────────────────────────────────────────
+
+@app.route('/health')
+def health():
+    try:
+        with db_conn() as conn:
+            conn.cursor().execute('SELECT 1')
+        return jsonify({'status': 'ok', 'db': 'connected'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'db': str(e)}), 500
+
+@app.errorhandler(413)
+def too_large(_):
+    return jsonify({'error': 'Fayl həcmi 5 MB-dan çox ola bilməz'}), 413
 
 # ────────────────────────────────────────────────────────────────
 # QR KOD
