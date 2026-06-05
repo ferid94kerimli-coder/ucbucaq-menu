@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, make_response
 from functools import wraps
 import contextlib, copy, json, os, uuid, secrets, time
 from datetime import datetime, timedelta
@@ -162,6 +162,17 @@ def init_db():
                 used     BOOLEAN NOT NULL DEFAULT FALSE
             )
         """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id       SERIAL PRIMARY KEY,
+                username TEXT NOT NULL,
+                action   TEXT NOT NULL,
+                detail   JSONB DEFAULT '{}',
+                ip       TEXT DEFAULT '',
+                ts       TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS audit_log_ts_idx ON audit_log (ts DESC)")
         # Vaxtı keçmiş və ya istifadə edilmiş tokenləri təmizlə
         cur.execute("DELETE FROM reset_tokens WHERE used = TRUE OR expires < NOW()")
 
@@ -237,6 +248,17 @@ def _upsert_user_data(cur, username, data):
            ON CONFLICT (username) DO UPDATE SET data = EXCLUDED.data""",
         (username, json.dumps(data, ensure_ascii=False))
     )
+
+def log_action(username, action, detail=None, ip=''):
+    try:
+        with db_conn() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO audit_log (username, action, detail, ip) VALUES (%s,%s,%s::jsonb,%s)",
+                (username, action, json.dumps(detail or {}, ensure_ascii=False), ip or '')
+            )
+    except Exception:
+        pass
 
 # ────────────────────────────────────────────────────────────────
 # KÖMƏKÇİLƏR
@@ -355,11 +377,17 @@ def api_login():
         session.permanent = True
         session['user'] = username
         session['role'] = role
+        log_action(username, 'login', {}, ip)
         return jsonify({'ok': True, 'username': username, 'role': role, 'must_change_password': must_change})
+    log_action(username or '?', 'login_failed', {}, ip)
     return jsonify({'ok': False, 'error': 'İstifadəçi adı və ya şifrə yanlışdır'}), 401
 
 @app.route('/api/logout', methods=['POST'])
 def api_logout():
+    user = current_user()
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if user:
+        log_action(user, 'logout', {}, ip)
     session.clear()
     return jsonify({'ok': True})
 
@@ -400,10 +428,12 @@ def api_save_data():
         cur.execute("SELECT data FROM user_data WHERE username = %s FOR UPDATE", (username,))
         row = cur.fetchone()
         db = row['data'] if row else copy.deepcopy(DEFAULT_MENU_DATA)
-        for key in incoming:
-            if key in allowed_keys:
-                db[key] = incoming[key]
+        changed = [k for k in incoming if k in allowed_keys]
+        for key in changed:
+            db[key] = incoming[key]
         _upsert_user_data(cur, username, db)
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    log_action(username, 'save_data', {'keys': changed}, ip)
     return jsonify({'ok': True})
 
 # ────────────────────────────────────────────────────────────────
@@ -491,6 +521,8 @@ def api_add_user():
     with db_conn() as conn:
         cur = conn.cursor()
         _upsert_user_data(cur, username, copy.deepcopy(DEFAULT_MENU_DATA))
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    log_action(current_user(), 'add_user', {'username': username, 'role': role}, ip)
     return jsonify({'ok': True})
 
 @app.route('/api/users/<username>', methods=['DELETE'])
@@ -499,6 +531,8 @@ def api_delete_user(username):
     if username == current_user():
         return jsonify({'error': 'Özünüzü silə bilməzsiniz'}), 400
     delete_user(username)
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    log_action(current_user(), 'delete_user', {'username': username}, ip)
     return jsonify({'ok': True})
 
 @app.route('/api/users/<username>/role', methods=['PUT'])
@@ -509,6 +543,8 @@ def api_update_user_role(username):
     with db_conn() as conn:
         cur = conn.cursor()
         cur.execute("UPDATE users SET role = %s WHERE username = %s", (role, username))
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    log_action(current_user(), 'change_role', {'username': username, 'role': role}, ip)
     return jsonify({'ok': True})
 
 @app.route('/api/users/<username>/set-password', methods=['PUT'])
@@ -526,6 +562,8 @@ def api_set_user_password(username):
             "UPDATE users SET password = %s, must_change_password = FALSE WHERE username = %s",
             (generate_password_hash(password), username)
         )
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    log_action(current_user(), 'set_password', {'username': username}, ip)
     return jsonify({'ok': True})
 
 @app.route('/api/users/<username>/email', methods=['PUT'])
@@ -742,20 +780,6 @@ def api_reset_password():
 # ONE-TIME: JSON MƏLUMATLARINI POSTGRESQL-Ə KÖÇ
 # ────────────────────────────────────────────────────────────────
 
-DEFAULT_MENU_DATA = {
-    "cafe": {"nameAz": "Restoran", "nameEn": "Restaurant",
-             "addrAz": "Bakı", "addrEn": "Baku", "phone": "",
-             "icon": "☕", "whatsapp": "", "instagram": "", "tiktok": "", "maps": ""},
-    "categories": [],
-    "items": [],
-    "theme": {"id": "classic", "vars": {
-        "accent": "#E8622A", "bg": "#FDF8F3", "card": "#FFFFFF",
-        "text": "#1A1210", "muted": "#8B7355",
-        "border": "rgba(180,140,100,0.18)",
-        "header": "#E8622A", "headerText": "#ffffff"}},
-    "stats": {"clicks": {}, "opens": {"total": 0, "dates": {}}, "cats": {}}
-}
-
 @app.route('/api/admin/import-data', methods=['POST'])
 @superadmin_required
 def api_import_data():
@@ -805,6 +829,130 @@ def api_import_data():
         'categories': len(data.get('categories', [])),
         'items': len(data.get('items', []))
     })
+
+# ────────────────────────────────────────────────────────────────
+# QR KOD
+# ────────────────────────────────────────────────────────────────
+
+@app.route('/api/qr')
+@login_required
+def api_qr():
+    import qrcode
+    username = current_user()
+    url = f"{APP_BASE_URL}/menu?u={username}"
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=10,
+        border=4
+    )
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color='black', back_color='white')
+    buf = io.BytesIO()
+    img.save(buf, 'PNG')
+    buf.seek(0)
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    log_action(username, 'qr_generate', {'url': url}, ip)
+    return send_file(buf, mimetype='image/png',
+                     download_name=f'{username}-menu-qr.png',
+                     as_attachment=False)
+
+# ────────────────────────────────────────────────────────────────
+# EXPORT
+# ────────────────────────────────────────────────────────────────
+
+@app.route('/api/data/export')
+@login_required
+def api_export_data():
+    username = current_user()
+    db = load_user_data(username)
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    log_action(username, 'export', {}, ip)
+    resp = make_response(json.dumps(db, ensure_ascii=False, indent=2))
+    resp.headers['Content-Type'] = 'application/json; charset=utf-8'
+    resp.headers['Content-Disposition'] = f'attachment; filename="{username}-menu-export.json"'
+    return resp
+
+@app.route('/api/admin/export/<target_username>')
+@superadmin_required
+def api_admin_export_data(target_username):
+    db = load_user_data(target_username)
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    log_action(current_user(), 'export', {'username': target_username}, ip)
+    resp = make_response(json.dumps(db, ensure_ascii=False, indent=2))
+    resp.headers['Content-Type'] = 'application/json; charset=utf-8'
+    resp.headers['Content-Disposition'] = f'attachment; filename="{target_username}-menu-export.json"'
+    return resp
+
+# ────────────────────────────────────────────────────────────────
+# SUPERADMİN — ÜMUMİ STATİSTİKA
+# ────────────────────────────────────────────────────────────────
+
+@app.route('/api/superadmin/stats')
+@superadmin_required
+def api_superadmin_stats():
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT u.username,
+                   COALESCE(ud.data->'cafe'->>'nameAz', u.username) AS name,
+                   COALESCE((ud.data->'stats'->'opens'->>'total')::int, 0) AS opens,
+                   ud.data->'stats'->'clicks' AS clicks,
+                   ud.data->'stats'->'cats'   AS cats
+            FROM users u
+            LEFT JOIN user_data ud ON u.username = ud.username
+            ORDER BY opens DESC
+        """)
+        rows = cur.fetchall()
+
+    restaurants = []
+    for r in rows:
+        clicks = r['clicks'] or {}
+        cats = r['cats'] or {}
+        restaurants.append({
+            'username': r['username'],
+            'name': r['name'],
+            'opens': r['opens'],
+            'totalClicks': sum(int(v) for v in clicks.values()),
+            'topItems': sorted(clicks.items(), key=lambda x: -int(x[1]))[:5],
+            'topCats': sorted(cats.items(), key=lambda x: -int(x[1]))[:5],
+        })
+
+    return jsonify({
+        'ok': True,
+        'totalRestaurants': len(restaurants),
+        'totalOpens': sum(r['opens'] for r in restaurants),
+        'restaurants': restaurants
+    })
+
+# ────────────────────────────────────────────────────────────────
+# AUDİT LOG
+# ────────────────────────────────────────────────────────────────
+
+@app.route('/api/admin/audit-log')
+@superadmin_required
+def api_audit_log():
+    limit = min(int(request.args.get('limit', 100)), 500)
+    user_filter = request.args.get('user', '').strip()
+    with db_conn() as conn:
+        cur = conn.cursor()
+        if user_filter:
+            cur.execute(
+                "SELECT * FROM audit_log WHERE username = %s ORDER BY ts DESC LIMIT %s",
+                (user_filter, limit)
+            )
+        else:
+            cur.execute("SELECT * FROM audit_log ORDER BY ts DESC LIMIT %s", (limit,))
+        rows = cur.fetchall()
+    return jsonify([{
+        'id': r['id'],
+        'username': r['username'],
+        'action': r['action'],
+        'detail': r['detail'],
+        'ip': r['ip'],
+        'ts': r['ts'].isoformat()
+    } for r in rows])
 
 # ────────────────────────────────────────────────────────────────
 # BAŞLANĞIC
