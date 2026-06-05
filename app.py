@@ -739,6 +739,74 @@ def api_reset_password():
     return jsonify({'ok': True, 'message': 'Şifrə uğurla yeniləndi'})
 
 # ────────────────────────────────────────────────────────────────
+# ONE-TIME: JSON MƏLUMATLARINI POSTGRESQL-Ə KÖÇ
+# ────────────────────────────────────────────────────────────────
+
+DEFAULT_MENU_DATA = {
+    "cafe": {"nameAz": "Restoran", "nameEn": "Restaurant",
+             "addrAz": "Bakı", "addrEn": "Baku", "phone": "",
+             "icon": "☕", "whatsapp": "", "instagram": "", "tiktok": "", "maps": ""},
+    "categories": [],
+    "items": [],
+    "theme": {"id": "classic", "vars": {
+        "accent": "#E8622A", "bg": "#FDF8F3", "card": "#FFFFFF",
+        "text": "#1A1210", "muted": "#8B7355",
+        "border": "rgba(180,140,100,0.18)",
+        "header": "#E8622A", "headerText": "#ffffff"}},
+    "stats": {"clicks": {}, "opens": {"total": 0, "dates": {}}, "cats": {}}
+}
+
+@app.route('/api/admin/import-data', methods=['POST'])
+@superadmin_required
+def api_import_data():
+    data = request.get_json(force=True) or {}
+    if not data:
+        return jsonify({'error': 'JSON boşdur'}), 400
+
+    MENU_KEYS = ('cafe', 'categories', 'items', 'theme', 'stats',
+                 'customCss', 'font', 'layout', 'subscription')
+
+    with db_conn() as conn:
+        cur = conn.cursor()
+
+        # 1. İstifadəçiləri əlavə et
+        users = data.get('users', {})
+        inserted_users = []
+        for username, info in users.items():
+            role = info.get('role', 'manager')
+            if role not in ('superadmin', 'manager'):
+                role = 'manager'
+            password = info.get('password', '')
+            email = info.get('email', '')
+            cur.execute("""
+                INSERT INTO users (username, password, role, email, must_change_password)
+                VALUES (%s, %s, %s, %s, FALSE)
+                ON CONFLICT (username) DO UPDATE
+                    SET password = EXCLUDED.password, role = EXCLUDED.role,
+                        email = EXCLUDED.email, must_change_password = FALSE
+            """, (username, password, role, email))
+            cur.execute("""
+                INSERT INTO user_data (username, data) VALUES (%s, %s::jsonb)
+                ON CONFLICT DO NOTHING
+            """, (username, json.dumps(copy.deepcopy(DEFAULT_MENU_DATA), ensure_ascii=False)))
+            inserted_users.append(f"{username} ({role})")
+
+        # 2. Admin-in menyu datasını yaz
+        menu_data = {k: data[k] for k in MENU_KEYS if k in data}
+        cur.execute("""
+            INSERT INTO user_data (username, data) VALUES ('admin', %s::jsonb)
+            ON CONFLICT (username) DO UPDATE SET data = EXCLUDED.data
+        """, (json.dumps(menu_data, ensure_ascii=False),))
+
+    return jsonify({
+        'ok': True,
+        'users': inserted_users,
+        'dataKeys': list(menu_data.keys()),
+        'categories': len(data.get('categories', [])),
+        'items': len(data.get('items', []))
+    })
+
+# ────────────────────────────────────────────────────────────────
 # BAŞLANĞIC
 # ────────────────────────────────────────────────────────────────
 
