@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel — Üçbucaq Restoran</title>
+<title>Admin Panel</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -329,8 +329,8 @@ input[type=file] { display:none; }
     <div class="card">
       <div data-i18n="basicInfo" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">📋 Əsas məlumat</div>
       <div class="form-grid">
-        <div class="form-group"><label id="label-cafe-name-az">Kafe adı (AZ)</label><input type="text" id="cafe-name-az" placeholder="Üçbucaq Restoran"></div>
-        <div class="form-group"><label id="label-cafe-name-en">Kafe adı (EN)</label><input type="text" id="cafe-name-en" placeholder="Üçbucaq Restoran"></div>
+        <div class="form-group"><label id="label-cafe-name-az">Kafe adı (AZ)</label><input type="text" id="cafe-name-az" placeholder="Restoran adı"></div>
+        <div class="form-group"><label id="label-cafe-name-en">Kafe adı (EN)</label><input type="text" id="cafe-name-en" placeholder="Restoran adı"></div>
         <div class="form-group"><label id="label-cafe-addr-az">Ünvan (AZ)</label><input type="text" id="cafe-addr-az" placeholder="Bakı, Nizami küçəsi 42"></div>
         <div class="form-group"><label id="label-cafe-addr-en">Ünvan (EN)</label><input type="text" id="cafe-addr-en" placeholder="42 Nizami Street, Baku"></div>
         <div class="form-group"><label id="label-cafe-phone">Telefon</label><input type="tel" id="cafe-phone" placeholder="+994 50 000 00 00"></div>
@@ -967,11 +967,11 @@ function togglePass() {
 var editingItemIdx = null, editingCatIdx = null, activeCatFilter = 'all', tempImageBase64 = null, tempCatImage = null, catImageDeleted = false, itemImageDeleted = false;
 var syncTimeout = null;
 
-function loadData() { return {cafe:{nameAz:"Üçbucaq Restoran"},categories:[],items:[]}; }
+function loadData() { return {cafe:{nameAz:"",nameEn:"",addrAz:"",addrEn:"",phone:"",icon:"🍽️"},categories:[],items:[]}; }
 
 async function saveData() {
   // localStorage-a dərhal yaz — menu.html sinxron oxusun
-  try { localStorage.setItem('cafe_data', JSON.stringify(STATE)); } catch(e) {}
+  // cafe_data artıq yalnız serverdə saxlanır
 
   clearTimeout(syncTimeout);
   syncTimeout = setTimeout(async function() {
@@ -997,32 +997,12 @@ async function loadFromServer() {
     var data = await r.json();
     if (!data || !data.categories) throw new Error('empty response');
     STATE = data;
-    // Serverdən gələn tema/font/layout-u localStorage-ə yaz və tətbiq et
-    if (STATE.theme && STATE.theme.id) {
-      localStorage.setItem(themeKey(), STATE.theme.id);
-      if (STATE.theme.vars) localStorage.setItem(themeVKey(), JSON.stringify(STATE.theme.vars));
-    }
-    if (STATE.font && STATE.font.id) {
-      localStorage.setItem(fontKey(), STATE.font.id);
-      localStorage.setItem(fontVKey(), JSON.stringify({body: STATE.font.body, heading: STATE.font.heading}));
-    }
-    if (STATE.layout) {
-      localStorage.setItem(layoutKey(), STATE.layout);
-    }
-    try { localStorage.setItem('cafe_data', JSON.stringify(STATE)); } catch(e) {}
-    if (STATE.cafe && !STATE.cafe.logo) {
-      var localLogo = localStorage.getItem('cafe_logo');
-      if (localLogo) STATE.cafe.logo = localLogo;
-    }
-    if (STATE.cafe && STATE.cafe.logo) {
-      localStorage.setItem('cafe_logo', STATE.cafe.logo);
-    }
+    // Tema/font/layout artıq yalnız STATE-dən oxunur, localStorage lazım deyil
     renderDashboard();
     renderMenuPage();
   } catch(e) {
     console.warn('loadFromServer xətası:', e);
-    var localLogo = localStorage.getItem('cafe_logo');
-    if (localLogo && STATE.cafe) STATE.cafe.logo = localLogo;
+
     renderDashboard();
     renderMenuPage();
   }
@@ -1145,7 +1125,7 @@ function saveIntegration() {
   showToast(interfaceLang==='en'?'Integration info saved':'İnteqrasiya məlumatları yadda saxlandı');
 }
 function adminLoadLogo() {
-  var url = (STATE.cafe && STATE.cafe.logo) ? STATE.cafe.logo : localStorage.getItem('cafe_logo');
+  var url = (STATE.cafe && STATE.cafe.logo) ? STATE.cafe.logo : '';
   if (url && STATE.cafe) STATE.cafe.logo = url; // STATE-i sinxronlaşdır
   var preview = document.getElementById('admin-logo-preview');
   var delBtn  = document.getElementById('admin-logo-del-btn');
@@ -1177,7 +1157,7 @@ function adminUploadLogo(input) {
 }
 function adminDeleteLogo() {
   showConfirm(interfaceLang==='en'?'Remove Logo':'Loqonu sil', interfaceLang==='en'?'Logo will be removed from the menu page.':'Loqo silinəcək və menyu səhifəsindən yox olacaq.', function(){
-    localStorage.removeItem('cafe_logo');
+
     if (STATE.cafe) delete STATE.cafe.logo;
     saveData();
     adminLoadLogo();
@@ -1676,7 +1656,7 @@ function buildPrintHTML(autoPrint) {
   var isCard   = activePrintTemplate === 'card';
 
   var cafe = STATE.cafe;
-  var logo = (STATE.cafe && STATE.cafe.logo) ? STATE.cafe.logo : localStorage.getItem('cafe_logo');
+  var logo = (STATE.cafe && STATE.cafe.logo) ? STATE.cafe.logo : '';
   if (logo && STATE.cafe && !STATE.cafe.logo) STATE.cafe.logo = logo;
   var cafeName = lang==='en' ? (cafe.nameEn||cafe.nameAz) : cafe.nameAz;
   var cafeAddr = lang==='en' ? (cafe.addrEn||cafe.addrAz) : cafe.addrAz;
@@ -1685,7 +1665,7 @@ function buildPrintHTML(autoPrint) {
 
   // accent color from theme
   var themeVars = {};
-  try { themeVars = JSON.parse(localStorage.getItem(themeVKey())||'{}'); } catch(e){}
+  try { themeVars = (STATE && STATE.theme && STATE.theme.vars) ? STATE.theme.vars : {}; } catch(e){}
   var accent = themeVars.accent || 'var(--accent)';
 
   var itemsHTML = '';
@@ -1901,7 +1881,7 @@ function fontKey()   { return 'cafe_font_'        + getCurrentUsername(); }
 function fontVKey()  { return 'cafe_font_vars_'   + getCurrentUsername(); }
 function layoutKey() { return 'cafe_layout_'      + getCurrentUsername(); }
 
-function getActiveThemeId() { return localStorage.getItem(themeKey()) || 'classic'; }
+function getActiveThemeId() { return (STATE && STATE.theme && STATE.theme.id) || 'classic'; }
 
 function renderThemePage() {
   var az = interfaceLang !== 'en';
@@ -1953,8 +1933,7 @@ function applyTheme(themeId) {
   var theme = null;
   for (var i=0; i<THEMES.length; i++) { if (THEMES[i].id === themeId) { theme = THEMES[i]; break; } }
   if (!theme) return;
-  localStorage.setItem(themeKey(), themeId);
-  localStorage.setItem(themeVKey(), JSON.stringify(theme.vars));
+  // Tema STATE-ə yazılır, server sync zamanı saxlanır
   // STATE-ə əlavə et ki JSONBin-ə yazılsın
   STATE.theme = { id: themeId, vars: theme.vars };
   saveData();
@@ -1975,7 +1954,7 @@ var FONTS = [
 
 function renderFontGrid() {
   var az = interfaceLang !== 'en';
-  var activeId = localStorage.getItem(fontKey()) || 'dmsans';
+  var activeId = (STATE && STATE.font && STATE.font.id) || 'dmsans';
   var grid = document.getElementById('font-grid');
   grid.innerHTML = '';
   FONTS.forEach(function(font) {
@@ -2003,8 +1982,7 @@ function renderFontGrid() {
 function applyFont(fontId) {
   var font = FONTS.find(function(f){ return f.id===fontId; });
   if (!font) return;
-  localStorage.setItem(fontKey(), fontId);
-  localStorage.setItem(fontVKey(), JSON.stringify({body: font.body, heading: font.heading}));
+  // Font STATE-ə yazılır, server sync zamanı saxlanır
   STATE.font = { id: fontId, body: font.body, heading: font.heading };
   saveData();
   renderFontGrid();
@@ -2020,7 +1998,7 @@ var LAYOUTS = [
 
 function renderLayoutGrid() {
   var az = interfaceLang !== 'en';
-  var activeId = localStorage.getItem(layoutKey()) || 'list';
+  var activeId = (STATE && STATE.layout) || 'list';
   var grid = document.getElementById('layout-grid');
   grid.innerHTML = '';
   LAYOUTS.forEach(function(layout) {
@@ -2042,7 +2020,7 @@ function renderLayoutGrid() {
 }
 
 function applyLayout(layoutId) {
-  localStorage.setItem(layoutKey(), layoutId);
+  // Layout STATE-ə yazılır, server sync zamanı saxlanır
   STATE.layout = layoutId;
   saveData();
   renderLayoutGrid();
@@ -2052,13 +2030,13 @@ function applyLayout(layoutId) {
 
 // ── CUSTOM CSS ──
 function loadCustomCssInput() {
-  var saved = localStorage.getItem('cafe_custom_css') || '';
+  var saved = (STATE && STATE.customCss) || '';
   document.getElementById('custom-css-input').value = saved;
 }
 
 function saveCustomCss() {
   var css = document.getElementById('custom-css-input').value.trim();
-  localStorage.setItem('cafe_custom_css', css);
+  // Custom CSS STATE-ə yazılır
   STATE.customCss = css;
   saveData();
   showToast(interfaceLang==='en'?'Custom CSS saved':'Özel CSS yadda saxlandı');
@@ -2066,7 +2044,7 @@ function saveCustomCss() {
 
 function clearCustomCss() {
   document.getElementById('custom-css-input').value = '';
-  localStorage.removeItem('cafe_custom_css');
+
   STATE.customCss = '';
   saveData();
   showToast(interfaceLang==='en'?'Custom CSS cleared':'Özel CSS silindi');
@@ -2454,7 +2432,8 @@ function applyI18n(lang) {
   if (loginBtn && !loginBtn.disabled) loginBtn.textContent = az ? 'Daxil ol' : 'Login';
 
   // 6. Sənəd başlığı
-  document.title = az ? 'Admin Panel — Üçbucaq Restoran' : 'Admin Panel — Üçbucaq Restaurant';
+  var cafeName = (STATE && STATE.cafe && (STATE.cafe.nameAz || STATE.cafe.nameEn)) || 'Admin';
+  document.title = 'Admin Panel — ' + cafeName;
 
   // 7. Drawer: Məhsul əlavə et / düzəlt
   var drawerTitle = document.getElementById('drawer-title');
@@ -2522,8 +2501,8 @@ function applyI18n(lang) {
 
   // 12. Placeholder-lər
   var placeholders = {
-    'cafe-name-az': az ? 'Üçbucaq Restoran' : 'Üçbucaq Restaurant',
-    'cafe-name-en': az ? 'Üçbucaq Restoran' : 'Üçbucaq Restaurant',
+    'cafe-name-az': az ? 'Restoran adı (AZ)' : 'Restaurant name (AZ)',
+    'cafe-name-en': az ? 'Restoran adı (EN)' : 'Restaurant name (EN)',
     'cafe-addr-az': az ? 'Bakı, Nizami küçəsi 42' : '42 Nizami Street, Baku',
     'cafe-addr-en': az ? 'Bakı, Nizami küçəsi 42' : '42 Nizami Street, Baku',
     'cafe-phone':   '+994 50 000 00 00',
@@ -2894,7 +2873,7 @@ window.addEventListener('load', function() {
         var base64 = e.target.result;
         STATE.cafe = STATE.cafe || {};
         STATE.cafe.logo = base64;
-        localStorage.setItem('cafe_logo', base64);
+        // Logo Cloudinary-ə yüklənir, localStorage lazım deyil
         saveData();
         adminLoadLogo();
         showToast(interfaceLang==='en'?'✅ Logo saved':'✅ Loqo yadda saxlandı');
