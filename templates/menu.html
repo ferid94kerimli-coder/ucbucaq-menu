@@ -1275,7 +1275,8 @@ function renderServiceFeeBanner() {
 }
 
 function loadLogo() {
-  const url = (STATE.cafe && STATE.cafe.logo) ? STATE.cafe.logo : localStorage.getItem('cafe_logo');
+  localStorage.removeItem('cafe_logo'); // köhnə cache təmizlə
+  const url = (STATE.cafe && STATE.cafe.logo) ? STATE.cafe.logo : null;
   const wrap = document.getElementById('logo-wrap');
   if (!wrap) return;
   if (url) {
