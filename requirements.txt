@@ -1,0 +1,6 @@
+flask
+flask-mail
+pillow
+werkzeug
+gunicorn
+psycopg2-binary

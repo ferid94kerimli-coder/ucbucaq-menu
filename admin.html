@@ -1,0 +1,3020 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Üçbucaq Restoran</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --accent: #C9A84C; --accent-dark: #a8872e;
+  --bg: #F5F3F0; --sidebar: #1C1917; --card: #FFFFFF;
+  --text: #1A1210; --muted: #8B7355; --border: rgba(0,0,0,0.08);
+  --danger: #dc2626; --success: #16a34a; --radius: 14px;
+  --input-bg: #fff;
+}
+/* DARK ADMIN THEME */
+body.admin-dark {
+  --bg: #0F0F0F; --card: #1A1A1A; --text: #E8E3DC;
+  --muted: #9A8F82; --border: rgba(255,255,255,0.08);
+  --input-bg: #252525; --sidebar: #111111;
+}
+body.admin-dark input[type=text],
+body.admin-dark input[type=tel],
+body.admin-dark input[type=number],
+body.admin-dark textarea,
+body.admin-dark select { background: var(--input-bg); color: var(--text); border-color: var(--border); }
+body.admin-dark input[type=password] { background: var(--input-bg); color: var(--text); border-color: var(--border); }
+body.admin-dark input[type=password]::placeholder { color: rgba(255,255,255,0.3); }
+body.admin-dark input[type=text]::placeholder,
+body.admin-dark input[type=tel]::placeholder,
+body.admin-dark textarea::placeholder { color: rgba(255,255,255,0.3); }
+body.admin-dark .cat-tab { background: #222; color: var(--muted); border-color: var(--border); }
+body.admin-dark .cat-tab:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+body.admin-dark .btn-ghost { background: transparent; color: var(--text); border-color: var(--border); }
+body.admin-dark .btn-ghost:hover { background: rgba(255,255,255,0.06); }
+body.admin-dark .btn-danger { background: rgba(220,38,38,0.15); color: #fca5a5; }
+body.admin-dark .btn-danger:hover { background: rgba(220,38,38,0.25); }
+body.admin-dark .drawer { background: #1C1C1C; }
+body.admin-dark .drawer-close { background: #2a2a2a; color: var(--muted); }
+body.admin-dark .drawer-close:hover { background: #333; }
+body.admin-dark .items-table tr:hover td { background: rgba(255,255,255,0.03); }
+body.admin-dark .login-card { background: rgba(255,255,255,0.03); }
+body.admin-dark #custom-css-input { background: #1a1a1a; color: var(--text); }
+body.admin-dark .img-preview-wrap { background: #222; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+/* LOGIN */
+#login-screen { position:fixed;inset:0;background:var(--sidebar);display:flex;align-items:center;justify-content:center;z-index:1000;transition:opacity 0.4s; }
+#login-screen.hidden { opacity:0;pointer-events:none; }
+.login-bg-pattern { position:absolute;inset:0;background-image:radial-gradient(circle at 20% 50%,rgba(232,98,42,0.12) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(232,98,42,0.06) 0%,transparent 40%);pointer-events:none; }
+.login-card { position:relative;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:2.5rem;width:380px;max-width:92vw;backdrop-filter:blur(20px);animation:loginSlideUp 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+@keyframes loginSlideUp { from{opacity:0;transform:translateY(28px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+.login-logo { text-align:center;margin-bottom:2rem; }
+.login-logo .logo-icon { width:56px;height:56px;background:var(--accent);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:1rem;box-shadow:0 8px 24px rgba(232,98,42,0.35); }
+.login-logo h1 { font-family:'Playfair Display',serif;font-size:1.4rem;color:#fff;font-weight:600; }
+.login-logo p { font-size:0.78rem;color:rgba(255,255,255,0.4);margin-top:3px; }
+.login-form { display:flex;flex-direction:column;gap:12px; }
+.login-field { display:flex;flex-direction:column;gap:5px; }
+.login-field label { font-size:0.72rem;font-weight:500;color:rgba(255,255,255,0.45);letter-spacing:0.5px;text-transform:uppercase; }
+.login-input { width:100%;padding:0.7rem 0.9rem;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-size:0.88rem;font-family:'DM Sans',sans-serif;color:#fff;outline:none;transition:border-color 0.2s,background 0.2s; }
+.login-input::placeholder { color:rgba(255,255,255,0.22); }
+.login-input:focus { border-color:var(--accent);background:rgba(255,255,255,0.09); }
+.login-input.error { border-color:#ef4444;animation:shake 0.4s ease; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+.password-wrap { position:relative; }
+.password-wrap .login-input { padding-right:2.6rem; }
+.toggle-pass { position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.35);font-size:0.95rem;padding:4px;transition:color 0.15s; }
+.toggle-pass:hover { color:rgba(255,255,255,0.7); }
+.login-error { font-size:0.78rem;color:#fca5a5;text-align:center;min-height:1.2em; }
+.login-btn { margin-top:4px;width:100%;padding:0.75rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:0.88rem;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:background 0.15s,transform 0.1s; }
+.login-btn:hover { background:var(--accent-dark); }
+.login-btn:active { transform:scale(0.98); }
+.login-btn:disabled { opacity:0.6;cursor:not-allowed; }
+
+
+/* SIDEBAR */
+.sidebar { width:220px;background:var(--sidebar);display:flex;flex-direction:column;padding:1.5rem 0;position:fixed;top:0;left:0;bottom:0;z-index:10; }
+.sidebar-logo { padding:0 1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:1rem; }
+.sidebar-logo h1 { font-family:'Playfair Display',serif;font-size:1.1rem;color:#fff;font-weight:600; }
+.sidebar-logo p { font-size:0.72rem;color:rgba(255,255,255,0.4);margin-top:2px; }
+.session-badge { display:flex;align-items:center;gap:7px;padding:0.5rem 1.25rem;margin-bottom:0.25rem; }
+.session-avatar { width:26px;height:26px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#fff;font-weight:600;flex-shrink:0; }
+.session-name { font-size:0.78rem;color:rgba(255,255,255,0.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.session-role { font-size:0.65rem;color:rgba(255,255,255,0.3); }
+.nav-item { display:flex;align-items:center;gap:10px;padding:0.65rem 1.25rem;color:rgba(255,255,255,0.55);font-size:0.85rem;cursor:pointer;border-left:3px solid transparent;transition:all 0.15s;user-select:none; }
+.nav-item:hover { color:#fff;background:rgba(255,255,255,0.05); }
+.nav-item.active { color:#fff;border-left-color:var(--accent);background:rgba(232,98,42,0.12); }
+.nav-icon { font-size:1rem;width:20px;text-align:center; }
+.sidebar-bottom { margin-top:auto;padding:1rem 1.25rem 0;border-top:1px solid rgba(255,255,255,0.08); }
+.logout-btn { display:flex;align-items:center;gap:10px;padding:0.65rem 0;color:rgba(255,255,255,0.4);font-size:0.85rem;cursor:pointer;border:none;background:none;font-family:'DM Sans',sans-serif;width:100%;transition:color 0.15s;margin-top:8px; }
+.logout-btn:hover { color:#ef4444; }
+
+/* MAIN */
+.main { margin-left:220px;flex:1;padding:2rem;max-width:calc(100vw - 220px); }
+.page { display:none; }
+.page.active { display:block; }
+.page-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem; }
+.page-title { font-size:1.3rem;font-weight:500; }
+
+/* BUTTONS */
+.btn { padding:0.55rem 1.1rem;border-radius:8px;font-size:0.82rem;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;border:none;transition:all 0.15s; }
+.btn-primary { background:var(--accent);color:#fff; }
+.btn-primary:hover { background:var(--accent-dark); }
+.btn-ghost { background:transparent;border:1px solid var(--border);color:var(--text); }
+.btn-ghost:hover { background:rgba(0,0,0,0.04); }
+.btn-danger { background:#fee2e2;color:var(--danger);border:none; }
+.btn-danger:hover { background:#fecaca; }
+.btn-sm { padding:0.35rem 0.75rem;font-size:0.75rem; }
+
+/* CARD */
+.card { background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:1.25rem;margin-bottom:1rem; }
+
+/* STATS */
+.stats-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.5rem; }
+.stat-card { background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:1rem 1.25rem; }
+.stat-label { font-size:0.72rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.8px; }
+.stat-value { font-size:1.8rem;font-weight:500;margin-top:4px; }
+.stat-value span { font-size:0.9rem;color:var(--muted); }
+
+/* FORM */
+.form-grid { display:grid;grid-template-columns:1fr 1fr;gap:14px; }
+.form-group { display:flex;flex-direction:column;gap:5px; }
+.form-group.full { grid-column:1/-1; }
+label { font-size:0.75rem;font-weight:500;color:var(--muted); }
+input[type=text],input[type=tel],input[type=number],textarea,select { width:100%;padding:0.55rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--input-bg);outline:none;transition:border-color 0.15s,background 0.2s,color 0.2s; }
+input[type=password] { width:100%;padding:0.55rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--input-bg);outline:none;transition:border-color 0.15s,background 0.2s,color 0.2s; }
+input:focus,textarea:focus,select:focus { border-color:var(--accent); }
+textarea { resize:vertical;min-height:70px; }
+.save-bar { display:flex;justify-content:flex-end;gap:8px;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border); }
+
+/* CATEGORY TABS */
+.cat-tabs { display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap; }
+.cat-tab { padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:0.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.15s;color:var(--muted); }
+.cat-tab.active { background:var(--accent);color:#fff;border-color:var(--accent); }
+.cat-tab:hover:not(.active) { border-color:var(--accent);color:var(--accent); }
+
+/* TABLE */
+.items-table { width:100%;border-collapse:collapse; }
+.items-table th { text-align:left;font-size:0.7rem;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;padding:0.5rem 0.75rem;border-bottom:1px solid var(--border); }
+.items-table td { padding:0.7rem 0.75rem;border-bottom:1px solid var(--border);font-size:0.85rem;vertical-align:middle; }
+.items-table tr:last-child td { border-bottom:none; }
+.items-table tr:hover td { background:#fafaf9; }
+.item-thumb { width:38px;height:38px;border-radius:8px;background:#f5f0eb;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0; }
+.item-thumb img { width:100%;height:100%;object-fit:cover;border-radius:8px; }
+.item-cell { display:flex;align-items:center;gap:10px; }
+.badge-pill { font-size:0.65rem;padding:2px 7px;border-radius:8px;font-weight:500; }
+.badge-pill.new { background:#eaf3de;color:#3B6D11; }
+.badge-pill.hot { background:#FAECE7;color:#993C1D; }
+.actions { display:flex;gap:6px; }
+
+/* DRAWER */
+.drawer-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center; }
+.drawer-overlay.open { display:flex; }
+@keyframes popIn { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.drawer { background:#fff;border-radius:18px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;padding:1.5rem;animation:popIn 0.22s ease both;position:relative; }
+.drawer h2 { font-size:1.1rem;font-weight:500;margin-bottom:1.25rem; }
+.drawer-close { position:absolute;top:1rem;right:1rem;background:var(--bg);border:none;width:30px;height:30px;border-radius:50%;font-size:0.95rem;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center; }
+.drawer-close:hover { background:#ece8e3; }
+.img-preview-wrap { width:100%;height:140px;border:2px dashed var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;overflow:hidden;position:relative;transition:border-color 0.15s; }
+.img-preview-wrap:hover { border-color:var(--accent); }
+.img-preview-wrap img { width:100%;height:100%;object-fit:cover;display:block; }
+.img-preview-wrap .placeholder { color:var(--muted);font-size:0.8rem;text-align:center; }
+.img-preview-wrap .placeholder span { font-size:1.8rem;display:block;margin-bottom:4px; }
+input[type=file] { display:none; }
+
+.items-table tr.drag-over td { background: rgba(232,98,42,0.07); }
+.drag-handle:hover { color: var(--accent) !important; }
+
+.nav-item.logout-nav { color:rgba(255,255,255,0.4); }
+.nav-item.logout-nav:hover { color:#ef4444 !important;background:rgba(239,68,68,0.08); }
+
+/* TOAST */
+.toast { position:fixed;bottom:1.5rem;right:1.5rem;background:#1C1917;color:#fff;padding:0.75rem 1.25rem;border-radius:10px;font-size:0.85rem;z-index:999;opacity:0;transform:translateY(10px);transition:all 0.25s;pointer-events:none; }
+.toast.show { opacity:1;transform:translateY(0); }
+
+@media(max-width:768px){
+  .sidebar{width:60px;}
+  .sidebar-logo,.nav-item span,.session-info,.logout-btn span{display:none;}
+  .nav-item{justify-content:center;padding:0.65rem;}
+  .session-badge{justify-content:center;padding:0.5rem;}
+  .logout-btn{justify-content:center;padding:0.65rem;}
+  .main{margin-left:60px;padding:1rem;max-width:calc(100vw - 60px);}
+  .form-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- TƏSDİQ MODALI -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+  <div style="background:var(--card);border-radius:16px;padding:1.75rem;width:340px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:popIn 0.2s ease both">
+    <div style="font-size:1.5rem;text-align:center;margin-bottom:0.75rem" id="confirm-icon">🗑</div>
+    <h3 style="text-align:center;font-size:1rem;font-weight:600;margin-bottom:0.5rem" id="confirm-title">Silmək istədiyinizdən əminsinizmi?</h3>
+    <p style="text-align:center;font-size:0.83rem;color:var(--muted);margin-bottom:1.25rem" id="confirm-desc"></p>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeConfirm()">Ləğv et</button>
+      <button class="btn btn-danger" style="flex:1;background:var(--danger);color:#fff" id="confirm-ok-btn" onclick="confirmOk()">Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-bg-pattern"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon">&#9749;</div>
+      <h1>QR Menu</h1>
+      <p>Admin Paneli</p>
+    </div>
+    <div class="login-form">
+      <div class="login-field">
+        <label>İstifadəçi adı</label>
+        <input class="login-input" id="login-user" type="text" placeholder="admin" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+      </div>
+      <div class="login-field">
+        <label>Şifrə</label>
+        <div class="password-wrap">
+          <input class="login-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+          <button class="toggle-pass" onclick="togglePass()" id="toggle-pass-btn">🔒</button>
+        </div>
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">Daxil ol</button>
+      <button type="button" onclick="openForgotModal()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:0.75rem;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:4px;text-align:center;width:100%;padding:4px;transition:color 0.15s" onmouseover="this.style.color='rgba(255,255,255,0.75)'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">🔑 Şifrəmi unutdum</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ŞİFRƏ SIFIRLAMA MODAL -->
+<div id="forgot-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+  <div style="background:#1C1917;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:2rem;width:360px;max-width:92vw;animation:loginSlideUp 0.3s ease both">
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:2rem;margin-bottom:8px">🔑</div>
+      <h3 style="color:#fff;font-family:'Playfair Display',serif;font-weight:600;margin:0 0 4px">Şifrəni sıfırla</h3>
+      <p style="color:rgba(255,255,255,0.4);font-size:0.78rem;margin:0">Email ünvanınıza sıfırlama linki göndəriləcək</p>
+    </div>
+    <div id="forgot-step1">
+      <div class="login-field" style="margin-bottom:12px">
+        <label style="font-size:0.72rem;font-weight:500;color:rgba(255,255,255,0.45);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:5px">İstifadəçi adı</label>
+        <input class="login-input" id="forgot-email" type="text" placeholder="istifadəçi adınız" onkeydown="if(event.key==='Enter')doForgotPassword()">
+      </div>
+      <div id="forgot-msg" style="font-size:0.78rem;text-align:center;min-height:1.2em;margin-bottom:8px"></div>
+      <button class="login-btn" id="forgot-btn" onclick="doForgotPassword()">Link göndər</button>
+      <button type="button" onclick="closeForgotModal()" style="background:none;border:none;color:rgba(255,255,255,0.35);font-size:0.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:10px;text-align:center;width:100%;padding:4px" onmouseover="this.style.color='rgba(255,255,255,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">Ləğv et</button>
+    </div>
+    <div id="forgot-step2" style="display:none;text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:12px">📧</div>
+      <p style="color:rgba(255,255,255,0.8);font-size:0.88rem;line-height:1.6">Sıfırlama linki emailinizə göndərildi.<br><span style="color:rgba(255,255,255,0.45);font-size:0.78rem">Spam qutusunu da yoxlayın.</span></p>
+      <button class="login-btn" onclick="closeForgotModal()" style="margin-top:1rem">Bağla</button>
+    </div>
+  </div>
+</div>
+
+<!-- YENİ ŞİFRƏ MODAL (reset link ilə giriş zamanı) -->
+<div id="reset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+  <div style="background:#1C1917;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:2rem;width:360px;max-width:92vw;animation:loginSlideUp 0.3s ease both">
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:2rem;margin-bottom:8px">🔒</div>
+      <h3 style="color:#fff;font-family:'Playfair Display',serif;font-weight:600;margin:0 0 4px">Yeni şifrə təyin et</h3>
+    </div>
+    <div class="login-field" style="margin-bottom:10px">
+      <label style="font-size:0.72rem;font-weight:500;color:rgba(255,255,255,0.45);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:5px">Yeni şifrə</label>
+      <input class="login-input" id="reset-pass1" type="password" placeholder="Ən az 6 simvol" onkeydown="if(event.key==='Enter')document.getElementById('reset-pass2').focus()">
+    </div>
+    <div class="login-field" style="margin-bottom:12px">
+      <label style="font-size:0.72rem;font-weight:500;color:rgba(255,255,255,0.45);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:5px">Şifrə (təkrar)</label>
+      <input class="login-input" id="reset-pass2" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doResetPassword()">
+    </div>
+    <div id="reset-msg" style="font-size:0.78rem;text-align:center;min-height:1.2em;margin-bottom:8px"></div>
+    <button class="login-btn" id="reset-btn" onclick="doResetPassword()">Şifrəni yenilə</button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>&#128247; QR Menu</h1>
+    <p>Admin Panel</p>
+  </div>
+  <div class="session-badge" id="session-badge" style="display:none">
+    <div class="session-avatar" id="session-avatar">A</div>
+    <div class="session-info">
+      <div class="session-name" id="session-name">Admin</div>
+      <div class="session-role">Administrator</div>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">&#128202;</span><span data-i18n="nav_dashboard">Dashboard</span></div>
+    <div class="nav-item" onclick="showPage('cafe',this)"><span class="nav-icon">&#127978;</span><span data-i18n="nav_cafe">Kafe məlumatı</span></div>
+    <div class="nav-item" onclick="showPage('menu',this)"><span class="nav-icon">&#127869;</span><span data-i18n="nav_menu">Menyu</span></div>
+    <div class="nav-item" onclick="showPage('categories',this)"><span class="nav-icon">&#128194;</span><span data-i18n="nav_categories">Kateqoriyalar</span></div>
+    <div class="nav-item" onclick="showPage('print',this)"><span class="nav-icon">🖨️</span><span data-i18n="nav_print">Çap / PDF</span></div>
+    <div class="nav-item" onclick="showPage('analytics',this)"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Statistika</span></div>
+    <div class="nav-item" onclick="showPage('theme',this)"><span class="nav-icon">&#127912;</span><span data-i18n="nav_theme">Görünüş</span></div>
+    <div class="nav-item" onclick="showPage('qr',this)"><span class="nav-icon">&#128247;</span><span data-i18n="nav_qr">QR Kod</span></div>
+
+    <div class="nav-item" onclick="showPage('settings',this)"><span class="nav-icon">&#9881;</span><span data-i18n="nav_settings">Ayarlar</span></div>
+    <div class="nav-item logout-nav" onclick="doLogout()"><span class="nav-icon">🚪</span><span data-i18n="logout">Çıxış</span></div>
+  </nav>
+
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header"><h2 class="page-title" data-i18n="nav_dashboard">Dashboard</h2></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label" data-i18n="stat_items">Məhsullar</div><div class="stat-value" id="stat-items">0</div></div>
+      <div class="stat-card"><div class="stat-label" data-i18n="stat_cats">Kateqoriyalar</div><div class="stat-value" id="stat-cats">0</div></div>
+
+    </div>
+    <div class="card">
+      <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;font-weight:500;" data-i18n="recent">Son əlavə edilən məhsullar</div>
+      <table class="items-table"><thead><tr><th data-i18n="col_product">Məhsul</th><th data-i18n="col_category">Kateqoriya</th><th data-i18n="col_price">Qiymət</th><th data-i18n="col_badge">Badge</th></tr></thead><tbody id="recent-body"></tbody></table>
+    </div>
+  </div>
+
+  <!-- CAFE INFO -->
+  <div class="page" id="page-cafe">
+    <div class="page-header"><h2 class="page-title" data-i18n="nav_cafe">Kafe məlumatı</h2></div>
+
+    <!-- Əsas məlumat -->
+    <div class="card">
+      <div data-i18n="basicInfo" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">📋 Əsas məlumat</div>
+      <div class="form-grid">
+        <div class="form-group"><label id="label-cafe-name-az">Kafe adı (AZ)</label><input type="text" id="cafe-name-az" placeholder="Üçbucaq Restoran"></div>
+        <div class="form-group"><label id="label-cafe-name-en">Kafe adı (EN)</label><input type="text" id="cafe-name-en" placeholder="Üçbucaq Restoran"></div>
+        <div class="form-group"><label id="label-cafe-addr-az">Ünvan (AZ)</label><input type="text" id="cafe-addr-az" placeholder="Bakı, Nizami küçəsi 42"></div>
+        <div class="form-group"><label id="label-cafe-addr-en">Ünvan (EN)</label><input type="text" id="cafe-addr-en" placeholder="42 Nizami Street, Baku"></div>
+        <div class="form-group"><label id="label-cafe-phone">Telefon</label><input type="tel" id="cafe-phone" placeholder="+994 50 000 00 00"></div>
+        <div class="form-group">
+          <label id="label-cafe-service-fee">Xidmət haqqı (%)</label>
+          <div style="position:relative">
+            <input type="number" id="cafe-service-fee" placeholder="7" min="0" max="100" step="0.5" style="padding-right:2rem">
+            <span style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:0.7rem;pointer-events:none">%</span>
+          </div>
+          <span id="hint-cafe-service-fee" style="font-size:0.7rem;color:var(--muted)">0 daxil etsəniz xidmət haqqı göstərilməz. Menyu səhifəsinin altında yazı kimi görünür.</span>
+        </div>
+      </div>
+      <div class="save-bar"><button class="btn btn-primary" data-i18n="save" onclick="saveCafeInfo()">Yadda saxla</button></div>
+    </div>
+
+    <!-- İş saatları -->
+    <div class="card">
+      <div style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">🕐 İş saatları</div>
+      <div id="hours-rows" style="display:flex;flex-direction:column;gap:10px;margin-bottom:1rem"></div>
+      <div class="save-bar"><button class="btn btn-primary" onclick="saveHours()">Yadda saxla</button></div>
+    </div>
+
+    <!-- Loqo -->
+    <div class="card">
+      <div data-i18n="logo" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">🖼️ Loqo</div>
+      <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+        <div id="admin-logo-preview" style="width:90px;height:90px;border-radius:16px;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:0.72rem;color:var(--muted);text-align:center;overflow:hidden;flex-shrink:0;background:#fafaf9">
+          <span style="font-size:1.8rem;display:block;margin-bottom:4px">🏪</span><span data-i18n="noLogo">Loqo yoxdur</span>
+        </div>
+        <div style="flex:1;min-width:160px">
+          <p data-i18n="logoDesc" style="font-size:0.82rem;color:var(--text);margin-bottom:0.5rem">Loqonuzu yükləyin — menu.html səhifəsinin header-ində görünəcək.</p>
+          <p data-i18n="logoTip" style="font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem">Tövsiyə: kvadrat format, minimum 200×200px, PNG və ya JPG.</p>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <label for="admin-logo-file" id="label-logo-upload" style="display:inline-block;padding:0.5rem 1rem;background:var(--accent);color:#fff;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:500">🖼️ Şəkil seç</label>
+            <input type="file" id="admin-logo-file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display:none">
+            <button class="btn btn-danger btn-sm" id="admin-logo-del-btn" onclick="adminDeleteLogo()" style="display:none">🗑 Sil</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- İnteqrasiya -->
+    <div class="card">
+      <div data-i18n="integration" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">🔗 İnteqrasiya</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label data-i18n="whatsapp">WhatsApp nömrəsi</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:1rem">💬</span>
+            <input type="text" id="cafe-whatsapp" placeholder="+994501234567" style="padding-left:2.2rem">
+          </div>
+          <span data-i18n="whatsappHint" style="font-size:0.7rem;color:var(--muted)">Ölkə kodu ilə, boşluqsuz</span>
+        </div>
+        <div class="form-group">
+          <label data-i18n="instagram">Instagram</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:1rem">📸</span>
+            <input type="text" id="cafe-instagram" placeholder="aromacafe" style="padding-left:2.2rem">
+          </div>
+          <span data-i18n="instagramHint" style="font-size:0.7rem;color:var(--muted)">@ işarəsiz istifadəçi adı</span>
+        </div>
+        <div class="form-group">
+          <label data-i18n="tiktok">TikTok</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:1rem">🎵</span>
+            <input type="text" id="cafe-tiktok" placeholder="aromacafe" style="padding-left:2.2rem">
+          </div>
+          <span data-i18n="tiktokHint" style="font-size:0.7rem;color:var(--muted)">@ işarəsiz istifadəçi adı</span>
+        </div>
+        <div class="form-group">
+          <label data-i18n="mapsLink">Google Maps linki</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:1rem">📍</span>
+            <input type="text" id="cafe-maps" placeholder="https://maps.google.com/?q=..." style="padding-left:2.2rem">
+          </div>
+          <span data-i18n="mapsHint" style="font-size:0.7rem;color:var(--muted)">Google Maps-dan "Linki kopyala" ilə alın</span>
+        </div>
+      </div>
+
+
+      <div class="save-bar"><button class="btn btn-primary" data-i18n="save" onclick="saveIntegration()">Yadda saxla</button></div>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="page" id="page-menu">
+    <div class="page-header">
+      <h2 class="page-title" data-i18n="nav_menu">Menyu idarəetməsi</h2>
+      <button class="btn btn-primary" onclick="openAddItem()" data-i18n="addItem">+ Məhsul əlavə et</button>
+    </div>
+    <!-- Search + filter bar -->
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+      <div style="position:relative;flex:1;min-width:180px">
+        <span style="position:absolute;left:0.7rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:0.9rem">🔍</span>
+        <input type="text" id="menu-search" placeholder="Məhsul axtar..." style="padding-left:2.2rem;width:100%" oninput="renderItemsTable()">
+      </div>
+      <select id="menu-status-filter" onchange="renderItemsTable()" style="width:auto;padding:0.55rem 0.75rem">
+        <option value="all">Hamısı</option>
+        <option value="active">Aktiv</option>
+        <option value="inactive">Deaktiv</option>
+      </select>
+    </div>
+    <div class="cat-tabs" id="menu-cat-tabs"></div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="items-table">
+        <thead><tr>
+          <th style="padding-left:1rem;width:28px"></th>
+          <th>Məhsul</th>
+          <th>Qiymət</th>
+          <th>Status</th>
+          <th>Kateqoriya</th>
+          <th style="padding-right:1rem">Əməliyyat</th>
+        </tr></thead>
+        <tbody id="items-body"></tbody>
+      </table>
+    </div>
+    <p style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem">&#9776; sütununu sürükləyərək məhsulların sırasını dəyişə bilərsiniz.</p>
+  </div>
+
+  <!-- CATEGORIES -->
+  <div class="page" id="page-categories">
+    <div class="page-header">
+      <h2 class="page-title" data-i18n="nav_categories">Kateqoriyalar</h2>
+      <button class="btn btn-primary" data-i18n="addCat" onclick="openAddCat()">+ Kateqoriya əlavə et</button>
+    </div>
+    <div id="cats-list"></div>
+  </div>
+
+  <!-- PRINT -->
+  <div class="page" id="page-print">
+    <div class="page-header"><h2 class="page-title" data-i18n="nav_print">Çap / PDF</h2></div>
+
+    <!-- Şablon seçimi -->
+    <div data-i18n="template" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">📐 Şablon seçin</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:1.5rem" id="print-template-grid"></div>
+
+    <!-- Seçimlər -->
+    <div class="card" style="margin-bottom:1rem">
+      <div data-i18n="params" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">⚙️ Parametrlər</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label data-i18n="printCat">Kateqoriya</label>
+          <select id="print-cat-filter">
+            <option value="all" data-i18n="all">Hamısı</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="printLang">Dil</label>
+          <select id="print-lang">
+            <option value="az" data-i18n="langAz">Azərbaycan</option>
+            <option value="en">English</option>
+            <option value="both" data-i18n="langBoth">Hər ikisi</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="printLogo">Loqo göstər</label>
+          <select id="print-logo">
+            <option value="yes" data-i18n="yes">Bəli</option>
+            <option value="no" data-i18n="no">Xeyr</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="printPrice">Qiymət göstər</label>
+          <select id="print-price">
+            <option value="yes" data-i18n="yes">Bəli</option>
+            <option value="no" data-i18n="no">Xeyr</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" data-i18n="printPreview" onclick="openPrintPreview()">👁 Önizləmə / PDF saxla</button>
+      <button class="btn btn-ghost" data-i18n="printDirect" onclick="openPrintPreview(true)">🖨️ Birbaşa çap et</button>
+    </div>
+    <p data-i18n="printNote" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem">Önizləmə pəncərəsində brauzerinizin "Çap et" → "PDF olaraq saxla" seçimini istifadə edin.</p>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div class="page" id="page-analytics">
+    <div class="page-header">
+      <h2 class="page-title" data-i18n="nav_analytics">Statistika</h2>
+      <button class="btn btn-danger btn-sm" onclick="clearStats()" data-i18n="clearStats">🗑 Sıfırla</button>
+    </div>
+
+    <!-- Ümumi statlar -->
+    <div class="stats-grid" style="margin-bottom:1.5rem">
+      <div class="stat-card"><div class="stat-label" data-i18n="menuOpens">Menyu açılması</div><div class="stat-value" id="stat-menu-opens">0</div></div>
+      <div class="stat-card"><div class="stat-label" data-i18n="itemViews">Məhsul baxışı</div><div class="stat-value" id="stat-total-clicks">0</div></div>
+      <div class="stat-card"><div class="stat-label" data-i18n="topItem">Ən populyar</div><div class="stat-value" id="stat-top-item" style="font-size:0.88rem;margin-top:6px">—</div></div>
+      <div class="stat-card"><div class="stat-label" data-i18n="topCat">Ən çox baxılan kateqoriya</div><div class="stat-value" id="stat-top-cat" style="font-size:0.88rem;margin-top:6px">—</div></div>
+    </div>
+
+    <!-- Son 7 gün -->
+    <div class="card" style="margin-bottom:1rem">
+      <div data-i18n="last7days" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">📅 Son 7 gün — menyu açılması</div>
+      <div id="opens-chart" style="display:flex;align-items:flex-end;gap:6px;height:80px;"></div>
+      <div id="opens-labels" style="display:flex;gap:6px;margin-top:6px;"></div>
+    </div>
+
+    <!-- Kateqoriya baxış payı -->
+    <div class="card" style="margin-bottom:1rem">
+      <div data-i18n="catShare" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">📂 Kateqoriya üzrə baxış payı</div>
+      <div id="cat-stats-list"></div>
+    </div>
+
+    <!-- Məhsul cədvəli -->
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:1rem">
+      <div data-i18n="topProducts" style="padding:1rem 1.25rem 0.5rem;font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px">🍽️ Ən çox baxılan məhsullar</div>
+      <table class="items-table">
+        <thead><tr>
+          <th style="padding-left:1rem">#</th>
+          <th data-i18n="col_product">Məhsul</th>
+          <th data-i18n="col_views">Baxış</th>
+          <th data-i18n="col_share" style="padding-right:1rem">Payı</th>
+        </tr></thead>
+        <tbody id="analytics-body"></tbody>
+      </table>
+    </div>
+
+    <p data-i18n="statNote" style="font-size:0.72rem;color:var(--muted)">Statistika müştərinin <strong>menu.html</strong>-də etdiyi hərəkətlər əsasında toplanır.</p>
+  </div>
+
+  <!-- THEME -->
+  <div class="page" id="page-theme">
+    <div class="page-header"><h2 class="page-title" data-i18n="nav_theme">Görünüş</h2></div>
+
+    <!-- COLOR THEMES -->
+    <div data-i18n="colorThemes" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">🎨 Rəng temaları</div>
+    <p data-i18n="themeNote" style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;">Seçdiyiniz tema <strong>menu.html</strong> səhifəsində avtomatik tətbiq olunur.</p>
+    <div id="theme-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:2rem;"></div>
+
+    <!-- FONT -->
+    <div data-i18n="fontTitle" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">🔤 Şrift seçimi</div>
+    <div id="font-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:2rem;"></div>
+
+    <!-- LAYOUT -->
+    <div data-i18n="layoutTitle" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">📐 Kart layoutu</div>
+    <div id="layout-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:2rem;"></div>
+
+
+  </div>
+
+  <!-- QR -->
+  <div class="page" id="page-qr">
+    <div class="page-header"><h2 class="page-title" data-i18n="nav_qr">QR Kod</h2></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:860px;align-items:start">
+
+      <!-- Sol: QR görüntüsü -->
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;padding:2rem;gap:1.25rem">
+        <div data-i18n="qrSectionTitle" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;align-self:flex-start">📷 Menyu QR Kodu</div>
+
+        <!-- QR wrapper — ağ fon, kənar padding, logo -->
+        <div id="qr-frame" style="background:#fff;border-radius:18px;padding:18px;box-shadow:0 4px 24px rgba(0,0,0,0.10);display:flex;flex-direction:column;align-items:center;gap:10px">
+          <canvas id="qr-canvas" style="border-radius:8px;display:block"></canvas>
+          <div id="qr-scan-label" data-i18n="qrScanLabel" style="font-size:0.68rem;font-weight:700;color:#1C1917;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px">Menyu üçün skan edin</div>
+        </div>
+
+        <!-- Düymələr -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%">
+          <button class="btn btn-primary" onclick="downloadQRCode()" style="flex:1;min-width:120px" data-i18n="qrDownload">⬇️ PNG yüklə</button>
+          <button class="btn btn-ghost" onclick="copyQrLink()" style="flex:1;min-width:120px" data-i18n="qrCopyLink">🔗 Linki kopyala</button>
+        </div>
+
+        <div id="qr-url-display" style="font-size:0.72rem;color:var(--muted);word-break:break-all;text-align:center;max-width:260px;line-height:1.5"></div>
+      </div>
+
+      <!-- Sağ: Link + məlumat -->
+      <div style="display:flex;flex-direction:column;gap:1rem">
+
+        <div class="card" style="background:rgba(201,168,76,0.06);border-color:rgba(201,168,76,0.3)">
+          <div data-i18n="qrYourLink" style="font-size:0.72rem;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:0.6rem">👤 Sizin menyu linkiniz</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.6rem">
+            <div id="qr-user-link" style="flex:1;font-size:0.82rem;font-weight:500;color:var(--text);word-break:break-all;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.75rem;font-family:monospace"></div>
+            <button onclick="copyQrLink()" title="Linki kopyala" style="flex-shrink:0;width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--muted);transition:all 0.18s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'" id="copy-link-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+          <p data-i18n="qrLinkDesc" style="font-size:0.72rem;color:var(--muted);line-height:1.5">Bu link yalnız <strong>sizin</strong> menyunuzu açır. QR kodu bu linkdən yaranır.</p>
+        </div>
+
+
+
+        <div class="card" style="background:rgba(201,168,76,0.04);border-color:rgba(201,168,76,0.2)">
+          <div data-i18n="qrHow" style="font-size:0.72rem;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:0.75rem">💡 Necə istifadə etmək olar?</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:10px;align-items:flex-start;font-size:0.82rem">
+              <span style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;flex-shrink:0">1</span>
+              <span data-i18n="qrStep1New" style="color:var(--muted);line-height:1.5">QR kodu avtomatik hazırdır — <b style="color:var(--text)">PNG yüklə</b> düyməsinə basın</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;font-size:0.82rem">
+              <span style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;flex-shrink:0">2</span>
+              <span data-i18n="qrStep2New" style="color:var(--muted);line-height:1.5">QR şəklini çap edib masaya qoyun</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;font-size:0.82rem">
+              <span style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;flex-shrink:0">3</span>
+              <span data-i18n="qrStep3New" style="color:var(--muted);line-height:1.5">Müştəri skan edəndə <b style="color:var(--text)">birbaşa sizin menyunuza</b> keçir</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="page-header"><h2 class="page-title" data-i18n="settings">Ayarlar</h2></div>
+
+    <div class="card" style="padding:0;overflow:hidden;max-width:560px">
+
+      <!-- TEMA -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1.25rem;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:0.85rem;font-weight:500;color:var(--text)">🖥️ <span data-i18n="panelTheme">Panel teması</span></div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px" data-i18n="panelThemeNote">Admin panelin görünüşü</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button id="theme-btn-light" onclick="setAdminTheme('light')" class="btn btn-sm btn-ghost" style="border:2px solid var(--border);transition:all 0.15s">☀️ Ağ</button>
+          <button id="theme-btn-dark"  onclick="setAdminTheme('dark')"  class="btn btn-sm btn-ghost" style="border:2px solid var(--border);transition:all 0.15s">🌙 Tünd</button>
+        </div>
+      </div>
+
+      <!-- DİL -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1.25rem;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:0.85rem;font-weight:500;color:var(--text)">🌐 <span data-i18n="interfaceLang">İnterfeys dili</span></div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px" data-i18n="langNote">Yalnız admin panelə təsir edir</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" id="lang-btn-az" onclick="setInterfaceLang('az')" style="border:2px solid var(--accent);background:var(--accent);color:#fff">AZ</button>
+          <button class="btn btn-sm btn-ghost" id="lang-btn-en" onclick="setInterfaceLang('en')" style="border:2px solid var(--border);color:var(--text)">EN</button>
+        </div>
+      </div>
+
+      <!-- İSTİFADƏÇİLƏR (superadmin) -->
+      <div class="superadmin-only" style="display:none;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1.25rem">
+          <div>
+            <div style="font-size:0.85rem;font-weight:500;color:var(--text)">👤 <span data-i18n="users">İstifadəçilər</span></div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:2px" data-i18n="usersNote">Admin panel istifadəçiləri</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openAddUser()" data-i18n="addUser">+ Əlavə et</button>
+        </div>
+        <div id="users-list" style="padding:0 1.25rem 1rem"></div>
+      </div>
+
+      <!-- ŞİFRƏ DƏYİŞ -->
+      <div style="padding:0.85rem 1.25rem">
+        <div style="font-size:0.85rem;font-weight:500;color:var(--text);margin-bottom:0.75rem">🔒 <span data-i18n="changePass">Şifrə dəyiş</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="position:relative">
+            <input type="password" id="s-cur-pass" placeholder="Cari şifrə" style="font-size:0.83rem;padding-right:2.4rem;width:100%;height:36px;box-sizing:border-box">
+            <button type="button" onclick="toggleSettingsPass('s-cur-pass',this)" style="position:absolute;right:0.65rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:15px">🔒</button>
+          </div>
+          <div style="position:relative">
+            <input type="password" id="s-new-pass" placeholder="Yeni şifrə" style="font-size:0.83rem;padding-right:2.4rem;width:100%;height:36px;box-sizing:border-box">
+            <button type="button" onclick="toggleSettingsPass('s-new-pass',this)" style="position:absolute;right:0.65rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:15px">🔒</button>
+          </div>
+          <div style="position:relative">
+            <input type="password" id="s-new-pass2" placeholder="Yeni şifrə (təkrar)" style="font-size:0.83rem;padding-right:2.4rem;width:100%;height:36px;box-sizing:border-box">
+            <button type="button" onclick="toggleSettingsPass('s-new-pass2',this)" style="position:absolute;right:0.65rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:15px">🔒</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:0.75rem">
+          <button class="btn btn-sm" onclick="changePassword()" data-i18n="updatePass" style="border:2px solid var(--accent);background:var(--accent);color:#000">Şifrəni yenilə</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<!-- ITEM DRAWER -->
+<div class="drawer-overlay" id="item-drawer" onclick="closeDrawer('item-drawer',event)">
+  <div class="drawer">
+    <button class="drawer-close" onclick="closeDrawerDirect('item-drawer')">&#10005;</button>
+    <h2 id="drawer-title">Məhsul əlavə et</h2>
+    <div class="form-grid">
+      <div class="form-group"><label id="label-name-az">Ad (AZ)</label><input type="text" id="f-name-az" placeholder="Espresso"></div>
+      <div class="form-group"><label id="label-name-en">Ad (EN)</label><input type="text" id="f-name-en" placeholder="Espresso"></div>
+      <div class="form-group full"><label id="label-ingredients">Tərkib</label><textarea id="f-ingredients" placeholder="Süd, şəkər, vanil..."></textarea></div>
+      <div class="form-group"><label id="label-price">Qiymət (AZN)</label><input type="text" id="f-price" placeholder="3.50"></div>
+      <div class="form-group"><label id="label-badge">Badge</label><select id="f-badge"><option value="null">Yoxdur</option><option value="new">Yeni</option><option value="hot">Məşhur</option></select></div>
+      <div class="form-group"><label id="label-cat">Kateqoriya</label><select id="f-cat"></select></div>
+      <div class="form-group full">
+        <label id="label-img">Şəkil</label>
+        <label for="f-image-file" style="display:inline-block;padding:0.5rem 1rem;background:var(--accent);color:#fff;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:500">🖼️ Şəkil seç</label>
+        <input type="file" id="f-image-file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display:none">
+        <div class="img-preview-wrap" id="img-preview-wrap" style="margin-top:6px">
+          <div class="placeholder"><span>&#128444;</span>Seçilmiş şəkil burada görünəcək</div>
+        </div>
+        <button type="button" id="item-img-del-btn" onclick="clearItemImage()" style="display:none;margin-top:6px;font-size:0.75rem;color:var(--danger);background:none;border:none;cursor:pointer;padding:0">🗑 Şəkli sil</button>
+      </div>
+    </div>
+    <div class="save-bar">
+      <button class="btn btn-ghost" id="item-drawer-cancel" onclick="closeDrawerDirect('item-drawer')">Ləğv et</button>
+      <button class="btn btn-primary" id="item-drawer-save" onclick="saveItem()">Yadda saxla</button>
+    </div>
+  </div>
+</div>
+
+<!-- CAT DRAWER -->
+<div class="drawer-overlay" id="cat-drawer" onclick="closeDrawer('cat-drawer',event)">
+  <div class="drawer">
+    <button class="drawer-close" onclick="closeDrawerDirect('cat-drawer')">&#10005;</button>
+    <h2 id="cat-drawer-title">Kateqoriya əlavə et</h2>
+    <div class="form-grid">
+      <div class="form-group"><label id="label-cf-az">Ad (AZ)</label><input type="text" id="cf-label-az" placeholder="Qəhvə"></div>
+      <div class="form-group"><label id="label-cf-en">Ad (EN)</label><input type="text" id="cf-label-en" placeholder="Coffee"></div>
+      <div class="form-group full">
+        <label id="label-cf-img">Şəkil</label>
+        <label for="cf-image-file" style="display:inline-block;padding:0.5rem 1rem;background:var(--accent);color:#fff;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:500">🖼️ Şəkil seç</label>
+        <input type="file" id="cf-image-file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display:none">
+        <div id="cf-img-preview" style="margin-top:8px;width:100%;height:120px;border:2px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--muted);overflow:hidden;position:relative">
+          <span>Seçilmiş şəkil burada görünəcək</span>
+        </div>
+        <button type="button" id="cf-img-del-btn" onclick="clearCatImage()" style="display:none;margin-top:6px;font-size:0.75rem;color:var(--danger);background:none;border:none;cursor:pointer;padding:0">🗑 Şəkli sil</button>
+      </div>
+    </div>
+    <div class="save-bar">
+      <button class="btn btn-ghost" id="cat-drawer-cancel" onclick="closeDrawerDirect('cat-drawer')">Ləğv et</button>
+      <button class="btn btn-primary" id="cat-drawer-save" onclick="saveCat()">Yadda saxla</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- USER DRAWER -->
+<div class="drawer-overlay" id="user-drawer" onclick="closeDrawer('user-drawer',event)">
+  <div class="drawer">
+    <button class="drawer-close" onclick="closeDrawerDirect('user-drawer')">&#10005;</button>
+    <h2 id="user-drawer-title">İstifadəçi əlavə et</h2>
+    <div class="form-grid">
+      <div class="form-group"><label>İstifadəçi adı</label><input type="text" id="u-username" placeholder="manager"></div>
+      <div class="form-group"><label>Rol</label><select id="u-role"><option value="admin">Admin</option><option value="manager">Manager</option></select></div>
+      <div class="form-group full"><label>Email (şifrə sıfırlama üçün)</label><input type="email" id="u-email" placeholder="user@gmail.com"></div>
+      <div class="form-group"><label>Şifrə</label><input type="password" id="u-pass" placeholder="••••••••"></div>
+      <div class="form-group"><label>Şifrə (təkrar)</label><input type="password" id="u-pass2" placeholder="••••••••"></div>
+    </div>
+    <div class="save-bar">
+      <button class="btn btn-ghost" onclick="closeDrawerDirect('user-drawer')">Ləğv et</button>
+      <button class="btn btn-primary" onclick="saveUser()">Yadda saxla</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── AUTH ──
+var CREDENTIALS = { admin:'admin123', manager:'cafe2024' };
+
+// ── ŞİFRƏMİ UNUTDUM ──
+function openForgotModal() {
+  document.getElementById('forgot-email').value = '';
+  document.getElementById('forgot-msg').textContent = '';
+  document.getElementById('forgot-step1').style.display = '';
+  document.getElementById('forgot-step2').style.display = 'none';
+  document.getElementById('forgot-btn').disabled = false;
+  document.getElementById('forgot-btn').textContent = 'Link göndər';
+  var m = document.getElementById('forgot-modal');
+  m.style.display = 'flex';
+  setTimeout(function(){ document.getElementById('forgot-email').focus(); }, 150);
+}
+function closeForgotModal() {
+  document.getElementById('forgot-modal').style.display = 'none';
+}
+function doForgotPassword() {
+  var email = document.getElementById('forgot-email').value.trim();
+  var msgEl = document.getElementById('forgot-msg');
+  var btn   = document.getElementById('forgot-btn');
+  msgEl.style.color = '#fca5a5';
+  if (!email) { msgEl.textContent = 'İstifadəçi adı daxil edin'; return; }
+  btn.disabled = true; btn.textContent = '⏳ Göndərilir...';
+  fetch('/api/forgot-password', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username: email})
+  }).then(function(r){
+    var status = r.status;
+    return r.text().then(function(text){
+      try { return {status: status, data: JSON.parse(text)}; }
+      catch(e) { return {status: status, data: {error: 'Server xətası (' + status + ')'}}; }
+    });
+  }).then(function(res){
+    var d = res.data;
+    if (d.ok) {
+      document.getElementById('forgot-step1').style.display = 'none';
+      document.getElementById('forgot-step2').style.display = '';
+    } else {
+      msgEl.textContent = d.error || ('Xəta: ' + res.status);
+      btn.disabled = false; btn.textContent = 'Link göndər';
+    }
+  }).catch(function(){
+    msgEl.textContent = 'Server ilə bağlantı xətası';
+    btn.disabled = false; btn.textContent = 'Link göndər';
+  });
+}
+
+// ── ŞİFRƏ SIFIRLAMA (token linki ilə) ──
+var RESET_TOKEN = null;
+function checkResetToken() {
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('reset_token');
+  if (!token) return;
+  RESET_TOKEN = token;
+  document.getElementById('reset-pass1').value = '';
+  document.getElementById('reset-pass2').value = '';
+  document.getElementById('reset-msg').textContent = '';
+  document.getElementById('reset-btn').disabled = false;
+  document.getElementById('reset-btn').textContent = 'Şifrəni yenilə';
+  document.getElementById('reset-modal').style.display = 'flex';
+  // URL-dən token-i sil (görünməsin)
+  window.history.replaceState({}, document.title, '/admin');
+}
+function doResetPassword() {
+  var pass1 = document.getElementById('reset-pass1').value;
+  var pass2 = document.getElementById('reset-pass2').value;
+  var msgEl = document.getElementById('reset-msg');
+  var btn   = document.getElementById('reset-btn');
+  msgEl.style.color = '#fca5a5';
+  if (!pass1 || !pass2) { msgEl.textContent = 'Hər iki xananı doldurun'; return; }
+  if (pass1 !== pass2)  { msgEl.textContent = 'Şifrələr uyğun deyil'; return; }
+  if (pass1.length < 6) { msgEl.textContent = 'Ən az 6 simvol olmalıdır'; return; }
+  btn.disabled = true; btn.textContent = '⏳ Yenilənir...';
+  fetch('/api/reset-password', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({token: RESET_TOKEN, password: pass1})
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.ok) {
+      msgEl.style.color = '#86efac';
+      msgEl.textContent = '✅ Şifrə uğurla yeniləndi! İndi daxil ola bilərsiniz.';
+      btn.style.display = 'none';
+      setTimeout(function(){ document.getElementById('reset-modal').style.display = 'none'; }, 2000);
+    } else {
+      msgEl.textContent = d.error || 'Xəta baş verdi';
+      btn.disabled = false; btn.textContent = 'Şifrəni yenilə';
+    }
+  }).catch(function(){
+    msgEl.textContent = 'Server bağlantı xətası';
+    btn.disabled = false; btn.textContent = 'Şifrəni yenilə';
+  });
+}
+
+function checkSession() {
+  fetch('/api/me').then(function(r){ return r.json(); }).then(function(d){
+    if (d.ok) showAdminUI(d.username, d.role);
+    else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('login-screen').classList.remove('hidden');
+      setTimeout(function(){ document.getElementById('login-user').focus(); }, 300);
+    }
+  });
+}
+function doLogin() {
+  var userEl = document.getElementById('login-user');
+  var passEl = document.getElementById('login-pass');
+  var errEl  = document.getElementById('login-error');
+  var btn    = document.getElementById('login-btn');
+  var username = userEl.value.trim();
+  var password = passEl.value;
+  errEl.textContent = '';
+  userEl.classList.remove('error'); passEl.classList.remove('error');
+  if (!username || !password) {
+    errEl.textContent = 'İstifadəçi adı və şifrə tələb olunur';
+    if (!username) userEl.classList.add('error');
+    if (!password) passEl.classList.add('error');
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Yoxlanılır...';
+  fetch('/api/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username: username, password: password})
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.ok) {
+      showAdminUI(d.username, d.role);
+      document.getElementById('login-screen').classList.add('hidden');
+      setTimeout(function(){ document.getElementById('login-screen').style.display = 'none'; }, 400);
+    } else {
+      errEl.textContent = d.error || 'İstifadəçi adı və ya şifrə yanlışdır';
+      passEl.classList.add('error'); passEl.value = ''; passEl.focus();
+      btn.disabled = false; btn.textContent = 'Daxil ol';
+    }
+  }).catch(function(){
+    errEl.textContent = 'Server bağlantı xətası';
+    btn.disabled = false; btn.textContent = 'Daxil ol';
+  });
+}
+function showAdminUI(username, role) {
+  document.getElementById('session-badge').style.display = 'flex';
+  document.getElementById('session-name').textContent = username.charAt(0).toUpperCase() + username.slice(1);
+  document.getElementById('session-avatar').textContent = username.charAt(0).toUpperCase();
+  sessionStorage.setItem('cafe_admin_session', JSON.stringify({username: username, role: role}));
+
+  // Rol badge-i göstər
+  var roleLabel = role === 'superadmin' ? 'Superadmin' : role === 'admin' ? 'Administrator' : 'Manager';
+  document.querySelector('.session-role') && (document.querySelector('.session-role').textContent = roleLabel);
+
+  // Superadmin-only elementləri göstər/gizlət
+  var isSuperAdmin = role === 'superadmin';
+  document.querySelectorAll('.superadmin-only').forEach(function(el){
+    el.style.display = isSuperAdmin ? (el.classList.contains('drawer-overlay') ? 'none' : 'block') : 'none';
+  });
+
+  loadFromServer();
+}
+function doLogout() {
+  fetch('/api/logout', {method:'POST'}).finally(function(){
+    document.getElementById('session-badge').style.display = 'none';
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-error').textContent = '';
+    document.getElementById('login-btn').disabled = false;
+    document.getElementById('login-btn').textContent = 'Daxil ol';
+    var ls = document.getElementById('login-screen');
+    ls.style.display = 'flex'; ls.classList.remove('hidden');
+    showToast(interfaceLang==='en'?'Logged out successfully':'Uğurla çıxış edildi');
+  });
+}
+function togglePass() {
+  var p = document.getElementById('login-pass');
+  var btn = document.getElementById('toggle-pass-btn');
+  if (p.type === 'password') { p.type = 'text'; btn.textContent = '🔓'; }
+  else { p.type = 'password'; btn.textContent = '🔒'; }
+}
+
+// ── STATE ──
+var editingItemIdx = null, editingCatIdx = null, activeCatFilter = 'all', tempImageBase64 = null, tempCatImage = null, catImageDeleted = false, itemImageDeleted = false;
+var syncTimeout = null;
+
+function loadData() { return {cafe:{nameAz:"Üçbucaq Restoran"},categories:[],items:[]}; }
+
+async function saveData() {
+  // localStorage-a dərhal yaz — menu.html sinxron oxusun
+  try { localStorage.setItem('cafe_data', JSON.stringify(STATE)); } catch(e) {}
+
+  clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(async function() {
+    try {
+      var r = await fetch('/api/data', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(STATE)
+      });
+      if (r.status === 402) {
+        showToast(interfaceLang==='en'?'❌ Subscription expired — changes not saved':'❌ Abunəlik bitib — dəyişikliklər saxlanılmadı');
+        document.getElementById('sub-expired-modal').style.display = 'flex';
+      } else if (r.ok) showToast(interfaceLang==='en'?'✅ Saved':'✅ Yadda saxlandı');
+      else showToast(interfaceLang==='en'?'⚠️ Save error':'⚠️ Saxlama xətası');
+    } catch(e) { showToast(interfaceLang==='en'?'⚠️ Connection error':'⚠️ Bağlantı xətası'); }
+  }, 800);
+}
+
+async function loadFromServer() {
+  try {
+    var r = await fetch('/api/data');
+    if (!r.ok) throw new Error('server error ' + r.status);
+    var data = await r.json();
+    if (!data || !data.categories) throw new Error('empty response');
+    STATE = data;
+    // Serverdən gələn tema/font/layout-u localStorage-ə yaz və tətbiq et
+    if (STATE.theme && STATE.theme.id) {
+      localStorage.setItem(themeKey(), STATE.theme.id);
+      if (STATE.theme.vars) localStorage.setItem(themeVKey(), JSON.stringify(STATE.theme.vars));
+    }
+    if (STATE.font && STATE.font.id) {
+      localStorage.setItem(fontKey(), STATE.font.id);
+      localStorage.setItem(fontVKey(), JSON.stringify({body: STATE.font.body, heading: STATE.font.heading}));
+    }
+    if (STATE.layout) {
+      localStorage.setItem(layoutKey(), STATE.layout);
+    }
+    try { localStorage.setItem('cafe_data', JSON.stringify(STATE)); } catch(e) {}
+    if (STATE.cafe && !STATE.cafe.logo) {
+      var localLogo = localStorage.getItem('cafe_logo');
+      if (localLogo) STATE.cafe.logo = localLogo;
+    }
+    if (STATE.cafe && STATE.cafe.logo) {
+      localStorage.setItem('cafe_logo', STATE.cafe.logo);
+    }
+    renderDashboard();
+    renderMenuPage();
+  } catch(e) {
+    console.warn('loadFromServer xətası:', e);
+    var localLogo = localStorage.getItem('cafe_logo');
+    if (localLogo && STATE.cafe) STATE.cafe.logo = localLogo;
+    renderDashboard();
+    renderMenuPage();
+  }
+}
+
+var STATE = loadData();
+
+// ── NAVIGATION — abunəlik yoxlaması ilə aşağıda (showPage) ──
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  var total = STATE.items.length;
+  document.getElementById('stat-items').textContent = total;
+  document.getElementById('stat-cats').textContent = STATE.categories.length;
+  var tbody = document.getElementById('recent-body');
+  tbody.innerHTML = '';
+  STATE.items.slice(-5).reverse().forEach(function(item) {
+    var cat = STATE.categories.find(function(c){ return c.id === item.catId; });
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td><div class="item-cell"><div class="item-thumb" style="background:'+(cat?cat.bg:'#f5f0eb')+'">'+(item.image||item.img ? '<img src="'+(item.image||item.img)+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">' : ((item.icon && item.icon!=="undefined") ? item.icon : '🍽️'))+'</div><div>'+item.nameAz+'</div></div></td><td style="color:var(--muted);font-size:0.8rem">'+(cat?cat.labelAz:'')+'</td><td style="font-weight:500;color:var(--accent)">'+item.price+' AZN</td><td>'+(item.badge&&item.badge!=='null'?('<span class="badge-pill '+item.badge+'">'+(item.badge==='new'?'Yeni':'Məşhur')+'</span>'):'—')+'</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+// ── CAFE INFO ──
+function loadCafeForm() {
+  var c = STATE.cafe;
+  document.getElementById('cafe-name-az').value   = c.nameAz    || '';
+  document.getElementById('cafe-name-en').value   = c.nameEn    || '';
+  document.getElementById('cafe-addr-az').value   = c.addrAz    || '';
+  document.getElementById('cafe-addr-en').value   = c.addrEn    || '';
+  document.getElementById('cafe-phone').value     = c.phone     || '';
+  document.getElementById('cafe-icon') && (document.getElementById('cafe-icon').value = c.icon || '');
+  document.getElementById('cafe-whatsapp').value  = c.whatsapp  || '';
+  document.getElementById('cafe-instagram').value = c.instagram || '';
+  document.getElementById('cafe-tiktok').value    = c.tiktok    || '';
+  document.getElementById('cafe-maps').value      = c.maps      || '';
+  var sfEl = document.getElementById('cafe-service-fee'); if (sfEl) sfEl.value = (c.serviceFee !== undefined && c.serviceFee !== null) ? c.serviceFee : 7;
+  adminLoadLogo();
+  renderSocialPreview();
+  renderHoursForm();
+}
+
+var DAYS_AZ = ['Bazar ertəsi','Çərşənbə axşamı','Çərşənbə','Cümə axşamı','Cümə','Şənbə','Bazar'];
+var DAYS_EN = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+var DEFAULT_HOURS = [
+  {open:'09:00',close:'23:00',closed:false},
+  {open:'09:00',close:'23:00',closed:false},
+  {open:'09:00',close:'23:00',closed:false},
+  {open:'09:00',close:'23:00',closed:false},
+  {open:'09:00',close:'23:00',closed:false},
+  {open:'09:00',close:'23:00',closed:false},
+  {open:'09:00',close:'23:00',closed:false}
+];
+
+function renderHoursForm() {
+  var hours = (STATE.cafe && STATE.cafe.hours) ? STATE.cafe.hours : DEFAULT_HOURS;
+  var cont = document.getElementById('hours-rows');
+  if (!cont) return;
+  cont.innerHTML = '';
+  hours.forEach(function(h, i) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--border)';
+    row.innerHTML =
+      '<span style="min-width:140px;font-size:0.85rem;font-weight:500;color:var(--text)">'+ DAYS_AZ[i] +'</span>' +
+      '<input type="time" value="'+(h.open||'09:00')+'" id="h-open-'+i+'" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--input-bg);color:var(--text);'+(h.closed?'opacity:0.35':'')+'" '+(h.closed?'disabled':'')+' onchange="hoursChanged()">' +
+      '<span style="color:var(--muted);font-size:0.8rem">—</span>' +
+      '<input type="time" value="'+(h.close||'23:00')+'" id="h-close-'+i+'" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--input-bg);color:var(--text);'+(h.closed?'opacity:0.35':'')+'" '+(h.closed?'disabled':'')+' onchange="hoursChanged()">' +
+      '<label style="display:flex;align-items:center;gap:5px;font-size:0.8rem;color:var(--muted);cursor:pointer;margin-left:auto">' +
+        '<input type="checkbox" id="h-closed-'+i+'" '+(h.closed?'checked':'')+' onchange="toggleDayClosed('+i+')" style="accent-color:var(--accent)"> Bağlıdır' +
+      '</label>';
+    cont.appendChild(row);
+  });
+}
+
+function toggleDayClosed(i) {
+  var closed = document.getElementById('h-closed-'+i).checked;
+  var openEl = document.getElementById('h-open-'+i);
+  var closeEl = document.getElementById('h-close-'+i);
+  openEl.disabled = closed; openEl.style.opacity = closed ? '0.35' : '1';
+  closeEl.disabled = closed; closeEl.style.opacity = closed ? '0.35' : '1';
+}
+
+function hoursChanged() {} // placeholder for future live preview
+
+function saveHours() {
+  var hours = DEFAULT_HOURS.map(function(_, i) {
+    return {
+      open:   document.getElementById('h-open-'+i).value,
+      close:  document.getElementById('h-close-'+i).value,
+      closed: document.getElementById('h-closed-'+i).checked
+    };
+  });
+  STATE.cafe = Object.assign(STATE.cafe || {}, { hours: hours });
+  saveData();
+  showToast(interfaceLang==='en' ? 'Working hours saved' : 'İş saatları yadda saxlandı');
+}
+function saveCafeInfo() {
+  STATE.cafe = Object.assign(STATE.cafe || {}, {
+    nameAz: document.getElementById('cafe-name-az').value,
+    nameEn: document.getElementById('cafe-name-en').value,
+    addrAz: document.getElementById('cafe-addr-az').value,
+    addrEn: document.getElementById('cafe-addr-en').value,
+    phone:  document.getElementById('cafe-phone').value,
+    icon:   (document.getElementById('cafe-icon') ? document.getElementById('cafe-icon').value : (STATE.cafe.icon||'')),
+    serviceFee: parseFloat(document.getElementById('cafe-service-fee').value) || 0,
+  });
+  saveData();
+  showToast(interfaceLang==='en'?'Cafe info saved':'Kafe məlumatları yadda saxlandı');
+}
+function saveIntegration() {
+  STATE.cafe = Object.assign(STATE.cafe || {}, {
+    whatsapp:  document.getElementById('cafe-whatsapp').value.trim().replace(/\s/g,''),
+    instagram: document.getElementById('cafe-instagram').value.trim().replace('@',''),
+    tiktok:    document.getElementById('cafe-tiktok').value.trim().replace('@',''),
+    maps:      document.getElementById('cafe-maps').value.trim(),
+  });
+  saveData();
+  renderSocialPreview();
+  showToast(interfaceLang==='en'?'Integration info saved':'İnteqrasiya məlumatları yadda saxlandı');
+}
+function adminLoadLogo() {
+  var url = (STATE.cafe && STATE.cafe.logo) ? STATE.cafe.logo : localStorage.getItem('cafe_logo');
+  if (url && STATE.cafe) STATE.cafe.logo = url; // STATE-i sinxronlaşdır
+  var preview = document.getElementById('admin-logo-preview');
+  var delBtn  = document.getElementById('admin-logo-del-btn');
+  if (!preview) return;
+  if (url) {
+    preview.innerHTML = '<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';
+    preview.style.border = '2px solid var(--border)';
+    if (delBtn) delBtn.style.display = '';
+  } else {
+    preview.innerHTML = '<span style="font-size:1.8rem;display:block;margin-bottom:4px">&#127978;</span><span style="font-size:0.72rem">Loqo yoxdur</span>';
+    if (delBtn) delBtn.style.display = 'none';
+  }
+}
+function adminUploadLogo(input) {
+  if (!input || !input.files || !input.files[0]) return;
+  var formData = new FormData();
+  formData.append('file', input.files[0]);
+  showToast(interfaceLang==='en'?'⏳ Uploading logo...':'⏳ Loqo yüklənir...');
+  fetch('/api/upload/logo', {method:'POST', body: formData})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.ok) {
+        STATE.cafe.logo = d.url;
+        saveData();
+        adminLoadLogo();
+        showToast(interfaceLang==='en'?'✅ Logo saved':'✅ Loqo yadda saxlandı');
+      } else { showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta'))); }
+    }).catch(function(){ showToast(interfaceLang==='en'?'❌ Upload error':'❌ Yüklənmə xətası'); });
+}
+function adminDeleteLogo() {
+  showConfirm(interfaceLang==='en'?'Remove Logo':'Loqonu sil', interfaceLang==='en'?'Logo will be removed from the menu page.':'Loqo silinəcək və menyu səhifəsindən yox olacaq.', function(){
+    localStorage.removeItem('cafe_logo');
+    if (STATE.cafe) delete STATE.cafe.logo;
+    saveData();
+    adminLoadLogo();
+    showToast(interfaceLang==='en'?'Logo removed':'Loqo silindi');
+  }, '🖼️');
+}
+function renderSocialPreview() {
+  var c = STATE.cafe;
+  var preview = document.getElementById('social-preview');
+  if (!preview) return;
+  preview.innerHTML = '';
+  var b = 'display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:0.8rem;font-weight:500;text-decoration:none;color:#fff';
+  if (c.whatsapp)  preview.innerHTML += '<a href="https://wa.me/'+c.whatsapp.replace('+','')+'" target="_blank" style="'+b+';background:#25D366">💬 WhatsApp</a>';
+  if (c.instagram) preview.innerHTML += '<a href="https://instagram.com/'+c.instagram+'" target="_blank" style="'+b+';background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)">📸 Instagram</a>';
+  if (c.tiktok)    preview.innerHTML += '<a href="https://tiktok.com/@'+c.tiktok+'" target="_blank" style="'+b+';background:#010101">🎵 TikTok</a>';
+  if (c.maps)      preview.innerHTML += '<a href="'+c.maps+'" target="_blank" style="'+b+';background:#4285F4">📍 Xəritə</a>';
+  if (!c.whatsapp && !c.instagram && !c.tiktok && !c.maps)
+    preview.innerHTML = '<span style="font-size:0.78rem;color:var(--muted)">Məlumat daxil edin...</span>';
+}
+
+// ── MENU ──
+function renderMenuPage() {
+  var tabs = document.getElementById('menu-cat-tabs');
+  tabs.innerHTML = '<button class="cat-tab '+(activeCatFilter==='all'?'active':'')+'" onclick="filterCat(\'all\')">Hamısı</button>';
+  STATE.categories.forEach(function(c) {
+    var count = STATE.items.filter(function(i){ return i.catId===c.id; }).length;
+    tabs.innerHTML += '<button class="cat-tab '+(activeCatFilter===c.id?'active':'')+'" onclick="filterCat(\''+c.id+'\')">'+c.labelAz+' <span style="opacity:0.6;font-size:0.7em">('+count+')</span></button>';
+  });
+  renderItemsTable();
+}
+function filterCat(id) { activeCatFilter = id; renderMenuPage(); }
+
+function renderItemsTable() {
+  var tbody = document.getElementById('items-body');
+  tbody.innerHTML = '';
+  var searchVal = (document.getElementById('menu-search')||{value:''}).value.toLowerCase();
+  var statusFilter = (document.getElementById('menu-status-filter')||{value:'all'}).value;
+
+  var filtered = STATE.items.filter(function(i) {
+    var matchCat = activeCatFilter==='all' || i.catId===activeCatFilter;
+    var matchSearch = !searchVal || i.nameAz.toLowerCase().includes(searchVal) || (i.nameEn||'').toLowerCase().includes(searchVal) || (i.descAz||'').toLowerCase().includes(searchVal);
+    var matchStatus = statusFilter==='all' || (statusFilter==='active' && !i.inactive) || (statusFilter==='inactive' && i.inactive);
+    return matchCat && matchSearch && matchStatus;
+  });
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Məhsul tapılmadı</td></tr>';
+    return;
+  }
+
+  filtered.forEach(function(item) {
+    var realIdx = STATE.items.indexOf(item);
+    var cat = STATE.categories.find(function(c){ return c.id===item.catId; });
+    var isInactive = !!item.inactive;
+    var tr = document.createElement('tr');
+    tr.setAttribute('draggable','true');
+    tr.setAttribute('data-idx', realIdx);
+    tr.style.opacity = isInactive ? '0.45' : '1';
+    tr.style.transition = 'opacity 0.2s';
+
+    // Drag handle
+    var handleTd = '<td style="padding-left:1rem;cursor:grab;color:var(--muted);font-size:1.1rem;user-select:none" class="drag-handle" title="Sürüklə">&#9776;</td>';
+
+    // Item cell
+    var thumbBg = cat ? cat.bg : '#f5f0eb';
+    var _pimg = item.image || item.img || ''; var _pico = (item.icon && item.icon !== 'undefined') ? item.icon : '🍽️'; var thumb = _pimg ? '<img src="'+_pimg+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">' : _pico;
+    var itemTd = '<td><div class="item-cell"><div class="item-thumb" style="background:'+thumbBg+'">'+thumb+'</div><div><div style="font-weight:500">'+item.nameAz+'</div><div style="font-size:0.75rem;color:var(--muted)">'+item.descAz+'</div></div></div></td>';
+
+    // Price
+    var priceTd = '<td style="font-weight:500;color:var(--accent)">'+item.price+' AZN</td>';
+
+    // Status toggle
+    var statusTd = '<td><button class="btn btn-sm" style="'+(isInactive?'background:#fee2e2;color:#dc2626':'background:#dcfce7;color:#16a34a')+';border:none;min-width:72px" onclick="toggleActive('+realIdx+')">'+(isInactive?'&#9888; Deaktiv':'&#10003; Aktiv')+'</button></td>';
+
+    // Category + move
+    var catOptions = STATE.categories.map(function(c){
+      return '<option value="'+c.id+'"'+(c.id===item.catId?' selected':'')+'>'+c.labelAz+'</option>';
+    }).join('');
+    var catTd = '<td><select class="btn btn-ghost btn-sm" style="border:1px solid var(--border);font-size:0.75rem;padding:0.3rem 0.5rem;cursor:pointer" onchange="moveItemCat('+realIdx+',this.value)">'+catOptions+'</select></td>';
+
+    // Actions
+    var actionsTd = '<td style="padding-right:1rem"><div class="actions"><button class="btn btn-ghost btn-sm" onclick="editItem('+realIdx+')">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteItem('+realIdx+')">🗑</button></div></td>';
+
+    tr.innerHTML = handleTd + itemTd + priceTd + statusTd + catTd + actionsTd;
+
+    // Drag events
+    tr.addEventListener('dragstart', function(e) {
+      dragSrcIdx = realIdx;
+      e.dataTransfer.effectAllowed = 'move';
+      tr.style.opacity = '0.3';
+    });
+    tr.addEventListener('dragend', function() {
+      tr.style.opacity = isInactive ? '0.45' : '1';
+      document.querySelectorAll('#items-body tr').forEach(function(r){ r.classList.remove('drag-over'); });
+    });
+    tr.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('#items-body tr').forEach(function(r){ r.classList.remove('drag-over'); });
+      tr.classList.add('drag-over');
+    });
+    tr.addEventListener('drop', function(e) {
+      e.preventDefault();
+      if (dragSrcIdx === null || dragSrcIdx === realIdx) return;
+      var moved = STATE.items.splice(dragSrcIdx, 1)[0];
+      var newIdx = STATE.items.indexOf(item);
+      STATE.items.splice(newIdx, 0, moved);
+      dragSrcIdx = null;
+      saveData();
+      renderMenuPage();
+      showToast(interfaceLang==='en'?'Order updated':'Sıralama yeniləndi');
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+var dragSrcIdx = null;
+
+function toggleActive(idx) {
+  STATE.items[idx].inactive = !STATE.items[idx].inactive;
+  saveData();
+  renderItemsTable();
+  showToast(STATE.items[idx].inactive?(interfaceLang==='en'?'Item deactivated':'Məhsul deaktiv edildi'):(interfaceLang==='en'?'Item activated':'Məhsul aktiv edildi'));
+}
+
+function moveItemCat(idx, newCatId) {
+  STATE.items[idx].catId = newCatId;
+  saveData();
+  renderMenuPage();
+  showToast(interfaceLang==='en'?'Category changed':'Kateqoriya dəyişdirildi');
+}
+
+// ── ITEM CRUD ──
+function bindImageInput() {
+  setTimeout(function() {
+    var inp = document.getElementById('f-image-file');
+    if (!inp || inp._bound) return;
+    inp._bound = true;
+    inp.addEventListener('change', function() {
+      if (!this.files || !this.files[0]) return;
+      var reader = new FileReader();
+      var file = this.files[0];
+      reader.onload = function(e) {
+        tempImageBase64 = e.target.result;
+        itemImageDeleted = false;
+        var wrap = document.getElementById('img-preview-wrap');
+        if (wrap) wrap.innerHTML = '<img src="' + tempImageBase64 + '" alt="" style="width:100%;height:100%;object-fit:cover">';
+        var delBtn = document.getElementById('item-img-del-btn');
+        if (delBtn) delBtn.style.display = '';
+      };
+      reader.readAsDataURL(file);
+    });
+  }, 100);
+}
+
+function openAddItem() {
+  editingItemIdx = null; tempImageBase64 = null; itemImageDeleted = false;
+  document.getElementById('drawer-title').textContent = 'Məhsul əlavə et';
+  ['f-name-az','f-name-en','f-ingredients','f-price'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('f-badge').value = 'null';
+  document.getElementById('img-preview-wrap').innerHTML = '<div class="placeholder"><span>&#128444;</span>Seçilmiş şəkil burada görünəcək</div>';
+  document.getElementById('item-img-del-btn').style.display = 'none';
+  populateCatSelect(null);
+  document.getElementById('item-drawer').classList.add('open');
+  bindImageInput();
+}
+function editItem(idx) {
+  editingItemIdx = idx; tempImageBase64 = null; itemImageDeleted = false;
+  var item = STATE.items[idx];
+  document.getElementById('drawer-title').textContent = 'Məhsulu düzəlt';
+  document.getElementById('f-name-az').value = item.nameAz;
+  document.getElementById('f-name-en').value = item.nameEn;
+  document.getElementById('f-ingredients').value = item.ingredients || '';
+  document.getElementById('f-price').value = item.price;
+  document.getElementById('f-badge').value = item.badge;
+  var _eimg = item.image || item.img || '';
+  document.getElementById('img-preview-wrap').innerHTML = _eimg ? '<img src="'+_eimg+'" alt="" style="width:100%;height:100%;object-fit:cover">' : '<div class="placeholder"><span>&#128444;</span>Seçilmiş şəkil burada görünəcək</div>';
+  document.getElementById('item-img-del-btn').style.display = _eimg ? '' : 'none';
+  populateCatSelect(item.catId);
+  document.getElementById('item-drawer').classList.add('open');
+  bindImageInput();
+}
+function populateCatSelect(selected) {
+  var sel = document.getElementById('f-cat'); sel.innerHTML = '';
+  STATE.categories.forEach(function(c) { var opt=document.createElement('option'); opt.value=c.id; opt.textContent=c.labelAz; if(c.id===selected) opt.selected=true; sel.appendChild(opt); });
+}
+function previewImage(input) {
+  if (!input || !input.files || !input.files[0]) return;
+  var formData = new FormData();
+  formData.append('file', input.files[0]);
+  showToast(interfaceLang==='en'?'⏳ Uploading image...':'⏳ Şəkil yüklənir...');
+  fetch('/api/upload', {method:'POST', body: formData})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.ok) {
+        tempImageBase64 = d.url;
+        document.getElementById('img-preview-wrap').innerHTML = '<img src="'+d.url+'" alt="" style="width:100%;height:100%;object-fit:cover">';
+        document.getElementById('f-image').value = d.url;
+        showToast(interfaceLang==='en'?'✅ Image uploaded':'✅ Şəkil yükləndi');
+      } else { showToast('❌ ' + (d.error||(interfaceLang==='en'?'Error':'Xəta'))); }
+    }).catch(function(){ showToast(interfaceLang==='en'?'❌ Upload error':'❌ Yüklənmə xətası'); });
+}
+function saveItem() {
+  var nameAz = document.getElementById('f-name-az').value.trim();
+  if (!nameAz) { showToast(interfaceLang==='en'?'Name (AZ) is required':'Ad (AZ) tələb olunur'); return; }
+  var existingImage = (editingItemIdx !== null && STATE.items[editingItemIdx]) ? (STATE.items[editingItemIdx].image || STATE.items[editingItemIdx].img || null) : null;
+  var finalImage;
+  if (tempImageBase64) { finalImage = tempImageBase64; }
+  else if (itemImageDeleted) { finalImage = null; }
+  else { finalImage = existingImage; }
+  var item = {
+    catId: document.getElementById('f-cat').value,
+    nameAz: nameAz,
+    nameEn: document.getElementById('f-name-en').value.trim(),
+    ingredients: document.getElementById('f-ingredients').value.trim(),
+    price: document.getElementById('f-price').value.trim(),
+    badge: document.getElementById('f-badge').value,
+    icon: '🍽️',
+    image: finalImage
+  };
+  if (editingItemIdx !== null) { STATE.items[editingItemIdx]=item; showToast(interfaceLang==='en'?'Item updated':'Məhsul yeniləndi'); }
+  else { STATE.items.push(item); showToast(interfaceLang==='en'?'Item added':'Məhsul əlavə edildi'); }
+  itemImageDeleted = false;
+  saveData(); closeDrawerDirect('item-drawer'); renderMenuPage();
+}
+function clearItemImage() {
+  tempImageBase64 = null; itemImageDeleted = true;
+  document.getElementById('img-preview-wrap').innerHTML = '<div class="placeholder"><span>&#128444;</span>Seçilmiş şəkil burada görünəcək</div>';
+  document.getElementById('item-img-del-btn').style.display = 'none';
+}
+function deleteItem(idx) {
+  var item = STATE.items[idx];
+  var name = item ? (item.nameAz || 'Məhsul') : 'Məhsul';
+  showConfirm(interfaceLang==='en'?'Delete Item':'Məhsulu sil', interfaceLang==='en'?'"' + name + '" will be deleted. This cannot be undone.':'"' + name + '" silinəcək. Bu əməliyyat geri qaytarıla bilməz.', function(){
+    STATE.items.splice(idx,1); saveData(); renderMenuPage(); showToast(interfaceLang==='en'?'Item deleted':'Məhsul silindi');
+  }, '🗑');
+}
+
+// ── CATEGORIES ──
+function renderCatsPage() {
+  var az = interfaceLang !== 'en';
+  var list = document.getElementById('cats-list'); list.innerHTML='';
+  STATE.categories.forEach(function(cat,idx) {
+    var card=document.createElement('div'); card.className='card';
+    card.style.cssText='display:flex;align-items:center;justify-content:space-between;';
+    var count=STATE.items.filter(function(i){ return i.catId===cat.id; }).length;
+    var thumbInner = cat.image
+      ? '<img src="'+cat.image+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">'
+      : '&#128194;';
+    var countLabel = az ? (count+' məhsul') : (count+' item'+(count!==1?'s':''));
+    var editLabel  = az ? '✏️ Düzəlt' : '✏️ Edit';
+    var delLabel   = az ? '🗑 Sil' : '🗑 Delete';
+    card.innerHTML='<div style="display:flex;align-items:center;gap:12px"><div style="width:42px;height:42px;border-radius:8px;background:'+cat.bg+';display:flex;align-items:center;justify-content:center;font-size:1.1rem;overflow:hidden;flex-shrink:0">'+thumbInner+'</div><div><div style="font-weight:500">'+cat.labelAz+' <span style="color:var(--muted);font-size:0.75rem">('+cat.labelEn+')</span></div><div style="font-size:0.75rem;color:var(--muted)">'+countLabel+'</div></div></div><div class="actions"><button class="btn btn-ghost btn-sm" onclick="editCat('+idx+')">'+editLabel+'</button><button class="btn btn-danger btn-sm" onclick="deleteCat('+idx+')">'+delLabel+'</button></div>';
+    list.appendChild(card);
+  });
+}
+function openAddCat() {
+  editingCatIdx=null;
+  document.getElementById('cat-drawer-title').textContent = interfaceLang==='en' ? 'Add Category' : 'Kateqoriya əlavə et';
+  ['cf-label-az','cf-label-en'].forEach(function(id){ document.getElementById(id).value=''; });
+  tempCatImage = null; catImageDeleted = false;
+  resetCatImagePreview();
+  document.getElementById('cat-drawer').classList.add('open');
+}
+function editCat(idx) {
+  editingCatIdx=idx; var cat=STATE.categories[idx];
+  document.getElementById('cat-drawer-title').textContent = interfaceLang==='en' ? 'Edit Category' : 'Kateqoriyanı düzəlt';
+  document.getElementById('cf-label-az').value=cat.labelAz;
+  document.getElementById('cf-label-en').value=cat.labelEn;
+  tempCatImage = null; catImageDeleted = false;
+  if (cat.image) {
+    document.getElementById('cf-img-preview').innerHTML = '<img src="'+cat.image+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">';
+    document.getElementById('cf-img-del-btn').style.display = '';
+  } else {
+    resetCatImagePreview();
+  }
+  document.getElementById('cat-drawer').classList.add('open');
+}
+function saveCat() {
+  var labelAz=document.getElementById('cf-label-az').value.trim();
+  if (!labelAz) { showToast(interfaceLang==='en'?'Azerbaijani name is required':'Azərbaycanca ad tələb olunur'); return; }
+  var existingCat = editingCatIdx !== null ? STATE.categories[editingCatIdx] : null;
+  var id = existingCat ? existingCat.id : labelAz.toLowerCase().replace(/ə/g,'e').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ğ/g,'g').replace(/ş/g,'s').replace(/ç/g,'c').replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') + '-' + Date.now().toString(36);
+  // Şəkil məntiqi: yeni şəkil seçilibsə onu götür, silinibsə null, heç nə dəyişməyibsə köhnəni saxla
+  var finalImage;
+  if (tempCatImage) {
+    finalImage = tempCatImage;
+  } else if (catImageDeleted) {
+    finalImage = null;
+  } else {
+    finalImage = existingCat ? (existingCat.image || null) : null;
+  }
+  var cat = {
+    id: id,
+    labelAz: labelAz,
+    labelEn: document.getElementById('cf-label-en').value.trim(),
+    bg: existingCat ? (existingCat.bg || '#F5F5F5') : '#F5F5F5',
+    image: finalImage
+  };
+  if (editingCatIdx!==null) { STATE.categories[editingCatIdx]=cat; showToast(interfaceLang==='en'?'Category updated':'Kateqoriya yeniləndi'); }
+  else { STATE.categories.push(cat); showToast(interfaceLang==='en'?'Category added':'Kateqoriya əlavə edildi'); }
+  tempCatImage = null; catImageDeleted = false;
+  saveData(); closeDrawerDirect('cat-drawer'); renderCatsPage();
+}
+function clearCatImage() {
+  tempCatImage = null;
+  catImageDeleted = true;
+  resetCatImagePreview();
+}
+function resetCatImagePreview() {
+  var preview = document.getElementById('cf-img-preview');
+  var delBtn = document.getElementById('cf-img-del-btn');
+  if (preview) preview.innerHTML = '<span>Seçilmiş şəkil burada görünəcək</span>';
+  if (delBtn) delBtn.style.display = 'none';
+}
+function deleteCat(idx) {
+  var cat=STATE.categories[idx];
+  var count=STATE.items.filter(function(i){ return i.catId===cat.id; }).length;
+  if (count>0) { showToast(interfaceLang==='en'?'First delete '+count+' item(s) in this category':'Əvvəlcə bu kateqoriyanın '+count+' məhsulunu silin'); return; }
+  showConfirm(interfaceLang==='en'?'Delete Category':'Kateqoriyanı sil', interfaceLang==='en'?'"' + cat.labelAz + '" will be deleted.':'"' + cat.labelAz + '" kateqoriyası silinəcək.', function(){
+    STATE.categories.splice(idx,1); saveData(); renderCatsPage(); showToast(interfaceLang==='en'?'Category deleted':'Kateqoriya silindi');
+  }, '📁');
+}
+
+// ── ANALYTICS ──
+function renderAnalytics() {
+  fetch('/api/stats').then(function(r){ return r.json(); }).then(function(data) {
+    _drawAnalytics(data);
+  }).catch(function(){ _drawAnalytics({clicks:{}, opens:{total:0,dates:{}}, cats:{}}); });
+}
+
+function _drawAnalytics(data) {
+  var clickStats = data.clicks || {};
+  var menuOpens  = data.opens  || {total:0, dates:{}};
+  var catStats   = data.cats   || {};
+
+  var clickEntries = Object.entries(clickStats).sort(function(a,b){ return b[1]-a[1]; });
+  var totalClicks  = clickEntries.reduce(function(s,e){ return s+e[1]; }, 0);
+  var catTotal     = Object.values(catStats).reduce(function(s,v){ return s+v; }, 0);
+
+  document.getElementById('stat-menu-opens').textContent = menuOpens.total || 0;
+  document.getElementById('stat-total-clicks').textContent = totalClicks;
+
+  var topItem = clickEntries.length ? clickEntries[0][0] : '—';
+  document.getElementById('stat-top-item').textContent = topItem;
+
+  var topCatId = Object.entries(catStats).sort(function(a,b){return b[1]-a[1];})[0];
+  var topCatName = '—';
+  if (topCatId) {
+    var tc = STATE.categories.find(function(c){ return c.id===topCatId[0]; });
+    if (tc) topCatName = tc.labelAz;
+  }
+  document.getElementById('stat-top-cat').textContent = topCatName;
+
+  // --- Son 7 gün bar chart ---
+  var chart = document.getElementById('opens-chart');
+  var labels = document.getElementById('opens-labels');
+  chart.innerHTML = ''; labels.innerHTML = '';
+  var days = [];
+  for (var i=6; i>=0; i--) {
+    var d = new Date(); d.setDate(d.getDate()-i);
+    var key = d.toISOString().slice(0,10);
+    var label = d.getDate() + '/' + (d.getMonth()+1);
+    days.push({key:key, label:label, val: menuOpens.dates[key]||0});
+  }
+  var maxVal = Math.max.apply(null, days.map(function(d){return d.val;})) || 1;
+  days.forEach(function(day) {
+    var pct = Math.round(day.val / maxVal * 100);
+    var bar = document.createElement('div');
+    bar.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;';
+    bar.innerHTML =
+      '<div style="font-size:0.65rem;color:var(--muted)">' + (day.val||'') + '</div>' +
+      '<div style="width:100%;background:var(--border);border-radius:4px 4px 0 0;height:60px;display:flex;align-items:flex-end">' +
+        '<div style="width:100%;height:'+Math.max(pct,2)+'%;background:var(--accent);border-radius:4px 4px 0 0;transition:height 0.4s;opacity:'+(day.val?'1':'0.3')+'"></div>' +
+      '</div>';
+    chart.appendChild(bar);
+    var lbl = document.createElement('div');
+    lbl.style.cssText = 'flex:1;text-align:center;font-size:0.62rem;color:var(--muted);';
+    lbl.textContent = day.label;
+    labels.appendChild(lbl);
+  });
+
+  // --- Kateqoriya payı ---
+  var catList = document.getElementById('cat-stats-list');
+  catList.innerHTML = '';
+  if (!catTotal) {
+    catList.innerHTML = '<p style="font-size:0.82rem;color:var(--muted);padding:0.5rem 0">Hələ kateqoriya statistikası yoxdur.</p>';
+  } else {
+    STATE.categories.forEach(function(cat) {
+      var count = catStats[cat.id] || 0;
+      var pct = catTotal ? Math.round(count/catTotal*100) : 0;
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:10px;';
+      row.innerHTML =
+        '<div style="width:10px;height:10px;border-radius:50%;background:'+cat.bg+';border:2px solid var(--accent);flex-shrink:0"></div>' +
+        '<div style="width:90px;font-size:0.82rem;font-weight:500;flex-shrink:0">'+cat.labelAz+'</div>' +
+        '<div style="flex:1;height:8px;background:var(--border);border-radius:4px;">' +
+          '<div style="height:8px;border-radius:4px;background:var(--accent);width:'+pct+'%;transition:width 0.4s"></div>' +
+        '</div>' +
+        '<div style="font-size:0.75rem;color:var(--muted);min-width:52px;text-align:right">'+count+' ('+pct+'%)</div>';
+      catList.appendChild(row);
+    });
+  }
+
+  // --- Məhsul cədvəli ---
+  var tbody = document.getElementById('analytics-body');
+  tbody.innerHTML = '';
+  if (!clickEntries.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:2rem">Hələ məhsul statistikası yoxdur.</td></tr>';
+    return;
+  }
+  clickEntries.forEach(function(entry, idx) {
+    var name = entry[0]; var count = entry[1];
+    var pct = totalClicks ? Math.round(count/totalClicks*100) : 0;
+    var item = STATE.items.find(function(i){ return i.nameAz===name; });
+    var cat  = item ? STATE.categories.find(function(c){ return c.id===item.catId; }) : null;
+    var icon = item ? ((item.icon && item.icon !== 'undefined') ? item.icon : '🍽️') : '🍽️';
+    var bg   = cat  ? cat.bg   : '#f5f0eb';
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="padding-left:1rem;font-weight:600;color:var(--muted);font-size:0.85rem">'+(idx+1)+'</td>'+
+      '<td><div class="item-cell">'+
+        '<div class="item-thumb" style="background:'+bg+'">'+
+          (item&&(item.image||item.img)?'<img src="'+(item.image||item.img||'')+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">':icon)+
+        '</div>'+
+        '<div style="font-weight:500">'+name+'</div>'+
+      '</div></td>'+
+      '<td><span style="font-weight:600;color:var(--accent)">'+count+'</span> <span style="color:var(--muted);font-size:0.78rem">baxış</span></td>'+
+      '<td style="padding-right:1rem">'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          '<div style="flex:1;height:6px;background:var(--border);border-radius:4px;min-width:50px">'+
+            '<div style="height:6px;border-radius:4px;background:var(--accent);width:'+pct+'%"></div>'+
+          '</div>'+
+          '<span style="font-size:0.75rem;color:var(--muted);min-width:32px">'+pct+'%</span>'+
+        '</div>'+
+      '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function clearStats() {
+  fetch('/api/stats', {method:'DELETE'}).then(function(){
+    renderAnalytics();
+    showToast(interfaceLang==='en'?'Statistics reset':'Statistika sıfırlandı');
+  });
+}
+
+// ── PRINT ──
+var PRINT_TEMPLATES = [
+  { id:'a4-classic',  name:'A4 Klassik',   nameEn:'A4 Classic',    desc:'Sadə, tam siyahı',       descEn:'Simple, full list',        icon:'📄', cols:1 },
+  { id:'a4-two-col',  name:'A4 İki Sütun', nameEn:'A4 Two Column', desc:'Kompakt, 2 sütun',       descEn:'Compact, 2 columns',       icon:'📋', cols:2 },
+  { id:'folded',      name:'Qatlanmış',    nameEn:'Folded',        desc:'A4 üç hissəyə bölünür',  descEn:'A4 divided into 3 parts',  icon:'📑', cols:3 },
+  { id:'card',        name:'Kart Menyu',   nameEn:'Card Menu',     desc:'Masa üstü kart formatı', descEn:'Table card format',        icon:'🃏', cols:2 },
+];
+var activePrintTemplate = 'a4-classic';
+
+function renderPrintPage() {
+  var az = interfaceLang !== 'en';
+  // Templates
+  var grid = document.getElementById('print-template-grid');
+  grid.innerHTML = '';
+  PRINT_TEMPLATES.forEach(function(t) {
+    var isActive = t.id === activePrintTemplate;
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.style.cssText = 'padding:1rem;cursor:pointer;border:2px solid '+(isActive?'var(--accent)':'var(--border)')+';text-align:center;transition:all 0.15s;';
+    card.onclick = function(){ activePrintTemplate=t.id; renderPrintPage(); };
+    var selectedLabel = az ? '✔ Seçildi' : '✔ Selected';
+    var tName = az ? t.name : (t.nameEn || t.name);
+    var tDesc = az ? t.desc : (t.descEn || t.desc);
+    card.innerHTML =
+      '<div style="font-size:2rem;margin-bottom:6px">'+t.icon+'</div>'+
+      '<div style="font-weight:500;font-size:0.85rem">'+tName+'</div>'+
+      '<div style="font-size:0.72rem;color:var(--muted);margin-top:2px">'+tDesc+'</div>'+
+      (isActive?'<div style="font-size:0.72rem;color:var(--accent);margin-top:6px;font-weight:500">'+selectedLabel+'</div>':'');
+    grid.appendChild(card);
+  });
+
+  // Category filter
+  var catSel = document.getElementById('print-cat-filter');
+  catSel.innerHTML = '<option value="all">'+(az?'Hamısı':'All')+'</option>';
+  STATE.categories.forEach(function(c) {
+    catSel.innerHTML += '<option value="'+c.id+'">'+(az ? c.labelAz : (c.labelEn||c.labelAz))+'</option>';
+  });
+}
+
+function buildPrintHTML(autoPrint) {
+  var lang     = document.getElementById('print-lang').value;
+  var catId    = document.getElementById('print-cat-filter').value;
+  var showLogo = document.getElementById('print-logo').value === 'yes';
+  var showPrice= document.getElementById('print-price').value === 'yes';
+  var tmpl     = PRINT_TEMPLATES.find(function(t){ return t.id===activePrintTemplate; });
+  var cols     = tmpl ? tmpl.cols : 1;
+  var isFolded = activePrintTemplate === 'folded';
+  var isCard   = activePrintTemplate === 'card';
+
+  var cafe = STATE.cafe;
+  var logo = (STATE.cafe && STATE.cafe.logo) ? STATE.cafe.logo : localStorage.getItem('cafe_logo');
+  if (logo && STATE.cafe && !STATE.cafe.logo) STATE.cafe.logo = logo;
+  var cafeName = lang==='en' ? (cafe.nameEn||cafe.nameAz) : cafe.nameAz;
+  var cafeAddr = lang==='en' ? (cafe.addrEn||cafe.addrAz) : cafe.addrAz;
+
+  var cats = STATE.categories.filter(function(c){ return catId==='all' || c.id===catId; });
+
+  // accent color from theme
+  var themeVars = {};
+  try { themeVars = JSON.parse(localStorage.getItem(themeVKey())||'{}'); } catch(e){}
+  var accent = themeVars.accent || 'var(--accent)';
+
+  var itemsHTML = '';
+  cats.forEach(function(cat) {
+    var items = STATE.items.filter(function(i){ return i.catId===cat.id && !i.inactive; });
+    if (!items.length) return;
+    var catLabel = lang==='en' ? (cat.labelEn||cat.labelAz) : cat.labelAz;
+    itemsHTML += '<div class="cat-section"><div class="cat-title">'+catLabel+'</div><div class="items-grid" style="columns:'+cols+'">';
+    items.forEach(function(item) {
+      var name = lang==='en' ? (item.nameEn||item.nameAz) : (lang==='both' ? item.nameAz+(item.nameEn?' / '+item.nameEn:'') : item.nameAz);
+      var desc = lang==='en' ? (item.descEn||item.descAz) : (lang==='both' ? item.descAz : item.descAz);
+      itemsHTML +=
+        '<div class="menu-item">'+
+          '<div class="item-row">'+
+            '<span class="item-name">'+name+'</span>'+
+            (showPrice ? '<span class="item-dots"></span><span class="item-price">'+item.price+' &#8380;</span>' : '')+
+          '</div>'+
+          (desc ? '<div class="item-desc">'+desc+'</div>' : '')+
+        '</div>';
+    });
+    itemsHTML += '</div></div>';
+  });
+
+  var logoHTML = '';
+  if (showLogo) {
+    if (logo) {
+      logoHTML = '<img src="'+logo+'" class="logo-img">';
+    } else {
+      logoHTML = '<div class="logo-placeholder">🔥</div>';
+    }
+  }
+
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
+    '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">'+
+    '<title>'+cafeName+' — Menyu</title>'+
+    '<style>'+
+      '*{box-sizing:border-box;margin:0;padding:0}'+
+      'body{font-family:\'DM Sans\',Arial,sans-serif;background:#fff;color:#1a1210;padding:0}'+
+      '@page{size:A4;margin:1.5cm}'+
+      '.page-wrap{max-width:19cm;margin:0 auto;padding:0.5cm}'+
+      '.header{text-align:center;border-bottom:2px solid '+accent+';padding-bottom:0.8cm;margin-bottom:0.8cm}'+
+      '.logo-img{width:80px;height:80px;object-fit:cover;border-radius:12px;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto}'+
+      '.logo-placeholder{font-size:2.5rem;text-align:center;margin-bottom:8px}'+
+      '.cafe-name{font-size:1.6rem;font-weight:700;color:'+accent+';letter-spacing:1px}'+
+      '.cafe-addr{font-size:0.75rem;color:#888;margin-top:4px}'+
+      '.cafe-phone{font-size:0.8rem;color:#555;margin-top:2px}'+
+      '.cat-section{margin-bottom:0.7cm;break-inside:avoid}'+
+      '.cat-title{font-size:1rem;font-weight:700;color:'+accent+';text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid '+accent+'33;padding-bottom:4px;margin-bottom:6px}'+
+      '.items-grid{column-gap:0.8cm}'+
+      '.menu-item{margin-bottom:6px;break-inside:avoid;padding:3px 0;border-bottom:1px dotted #eee}'+
+      '.item-row{display:flex;align-items:baseline;gap:4px}'+
+      '.item-name{font-size:0.82rem;font-weight:600;flex-shrink:0}'+
+      '.item-dots{flex:1;border-bottom:1px dotted #bbb;margin:0 4px;min-width:20px;height:1em}'+
+      '.item-price{font-size:0.82rem;font-weight:700;color:'+accent+';flex-shrink:0;white-space:nowrap}'+
+      '.item-desc{font-size:0.7rem;color:#888;margin-top:1px;font-style:italic}'+
+      '.footer{text-align:center;margin-top:0.8cm;padding-top:0.5cm;border-top:1px solid #eee;font-size:0.7rem;color:#aaa}'+
+      (isFolded?'@page{size:A4 landscape;}.page-wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5cm;height:18cm}':'')+
+      (isCard?'@page{size:A5;margin:1cm}'+'.page-wrap{max-width:14cm}':'')+
+      '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}'+
+    '</style></head><body>'+
+    '<div class="page-wrap">'+
+      '<div class="header">'+
+        logoHTML+
+        '<div class="cafe-name">'+cafeName+'</div>'+
+        (cafeAddr?'<div class="cafe-addr">'+cafeAddr+'</div>':'')+
+        (cafe.phone?'<div class="cafe-phone">'+cafe.phone+'</div>':'')+
+      '</div>'+
+      itemsHTML+
+      '<div class="footer">'+cafeName+' &copy; '+new Date().getFullYear()+'</div>'+
+    '</div>'+
+    (autoPrint?'<script>window.onload=function(){window.print()}<\/script>':'')+
+    '</body></html>';
+}
+
+function openPrintPreview(autoPrint) {
+  var html = buildPrintHTML(autoPrint);
+  var win = window.open('','_blank','width=900,height=700');
+  win.document.write(html);
+  win.document.close();
+}
+
+
+// ── TƏSDİQ MODALI ──
+var _confirmCallback = null;
+function showConfirm(title, desc, callback, icon) {
+  document.getElementById('confirm-title').textContent = title || 'Silmək istədiyinizdən əminsinizmi?';
+  document.getElementById('confirm-desc').textContent  = desc  || '';
+  document.getElementById('confirm-icon').textContent  = icon  || '🗑';
+  _confirmCallback = callback;
+  var m = document.getElementById('confirm-modal');
+  m.style.display = 'flex';
+  setTimeout(function(){ document.getElementById('confirm-ok-btn').focus(); }, 100);
+}
+function closeConfirm() {
+  document.getElementById('confirm-modal').style.display = 'none';
+  _confirmCallback = null;
+}
+function confirmOk() {
+  var cb = _confirmCallback;
+  closeConfirm();
+  if (cb) cb();
+}
+document.getElementById('confirm-modal').addEventListener('click', function(e){
+  if (e.target === this) closeConfirm();
+});
+
+// ── THEMES ──
+var THEMES = [
+  {
+    id:'ember',
+    name:'🔥 Ember Nights',
+    desc:'Qara üzərində kor-kor yanan kömür kimi isti',
+    descEn:'Warm as glowing embers on a dark background',
+    preview:['#FF4500','#0D0D0D','#FF6B35','#1A1A1A'],
+    vars:{accent:'#FF4500',bg:'#0D0D0D',card:'#1A1A1A',text:'#F5F0EB',muted:'#8B6355',border:'rgba(255,69,0,0.2)',header:'#0D0D0D',headerText:'#FF4500'}
+  },
+  {
+    id:'arctic',
+    name:'🧊 Arctic Breeze',
+    desc:'Buzlu mavi, soyuq və təmiz premium hiss',
+    descEn:'Icy blue, cool and clean premium feel',
+    preview:['#00B4D8','#F0F8FF','#023E8A','#FFFFFF'],
+    vars:{accent:'#00B4D8',bg:'#F0F8FF',card:'#FFFFFF',text:'#023E8A',muted:'#5A8FA8',border:'rgba(0,180,216,0.15)',header:'#023E8A',headerText:'#00B4D8'}
+  },
+  {
+    id:'midnight',
+    name:'🌙 Midnight Gold',
+    desc:'Dərin tünd gecə — qızıl aksentlər ilə',
+    descEn:'Deep dark night with golden accents',
+    preview:['#D4AF37','#0A0A1A','#D4AF37','#12122A'],
+    vars:{accent:'#D4AF37',bg:'#0A0A1A',card:'#12122A',text:'#F0E8C8',muted:'#8B7A45',border:'rgba(212,175,55,0.2)',header:'#0A0A1A',headerText:'#D4AF37'}
+  },
+  {
+    id:'sakura',
+    name:'🌸 Sakura Garden',
+    desc:'Yapon albalı çiçəyi — zərif və incə',
+    descEn:'Japanese cherry blossom — delicate and elegant',
+    preview:['#E91E8C','#FFF0F8','#4A0028','#FFFFFF'],
+    vars:{accent:'#E91E8C',bg:'#FFF0F8',card:'#FFFFFF',text:'#4A0028',muted:'#A06080',border:'rgba(233,30,140,0.12)',header:'#E91E8C',headerText:'#ffffff'}
+  },
+  {
+    id:'forest',
+    name:'🌲 Deep Forest',
+    desc:'Meşənin dərinliyi — torpaq və yaşıl',
+    descEn:'The depths of the forest — earthy greens',
+    preview:['#2D6A4F','#0D1F0F','#52B788','#162D1A'],
+    vars:{accent:'#52B788',bg:'#0D1F0F',card:'#162D1A',text:'#D8F3DC',muted:'#52734D',border:'rgba(82,183,136,0.18)',header:'#0D1F0F',headerText:'#52B788'}
+  },
+  {
+    id:'sunset',
+    name:'🌅 Baku Sunset',
+    desc:'Bakı üzərindəki sunset — narıncı, qırmızı, bənövşəyi',
+    descEn:'Sunset over Baku — orange, red, violet',
+    preview:['#FF6B35','#1A0A2E','#FF3CAC','#2D1B4E'],
+    vars:{accent:'#FF6B35',bg:'#1A0A2E',card:'#2D1B4E',text:'#FFE5D4',muted:'#9B6B8A',border:'rgba(255,107,53,0.2)',header:'#1A0A2E',headerText:'#FF6B35'}
+  },
+  {
+    id:'espresso',
+    name:'☕ Espresso Bar',
+    desc:'Qəhvənin özü — tünd, dərin, zəngin',
+    descEn:'Coffee itself — dark, deep, rich',
+    preview:['#C8A96E','#1C0F07','#C8A96E','#2A1810'],
+    vars:{accent:'#C8A96E',bg:'#1C0F07',card:'#2A1810',text:'#F5ECD7',muted:'#8B6B45',border:'rgba(200,169,110,0.2)',header:'#1C0F07',headerText:'#C8A96E'}
+  },
+  {
+    id:'neon',
+    name:'⚡ Neon City',
+    desc:'Gecə şəhəri — neon işıqlar, qaranlıq küçələr',
+    descEn:'Night city — neon lights, dark streets',
+    preview:['#00FF88','#030312','#00CFFF','#080825'],
+    vars:{accent:'#00FF88',bg:'#030312',card:'#080825',text:'#E0FFE8',muted:'#3A7A5A',border:'rgba(0,255,136,0.15)',header:'#030312',headerText:'#00FF88'}
+  },
+  {
+    id:'clay',
+    name:'🏺 Clay & Cream',
+    desc:'Əl ilə yoğrulmuş gil — natural, minimal, istiqanlı',
+    descEn:'Hand-molded clay — natural, minimal, warm',
+    preview:['#B5622A','#F7F0E8','#5C3317','#FFFFFF'],
+    vars:{accent:'#B5622A',bg:'#F7F0E8',card:'#FFFFFF',text:'#3D2010',muted:'#9B7A5A',border:'rgba(181,98,42,0.15)',header:'#B5622A',headerText:'#ffffff'}
+  },
+  {
+    id:'lavender',
+    name:'💜 Lavender Dusk',
+    desc:'Bənövşə tarlası — yumşaq, rahatladıcı, premium',
+    descEn:'Lavender field — soft, relaxing, premium',
+    preview:['#7C3AED','#F5F0FF','#2D0A6E','#FFFFFF'],
+    vars:{accent:'#7C3AED',bg:'#F5F0FF',card:'#FFFFFF',text:'#1E0A4E',muted:'#7A6090',border:'rgba(124,58,237,0.12)',header:'#7C3AED',headerText:'#ffffff'}
+  },
+  {
+    id:'coral',
+    name:'🪸 Coral Reef',
+    desc:'Mərcan rəngi — canlı, enerjili, yay hissi',
+    descEn:'Coral color — vibrant, energetic, summery',
+    preview:['#FF6B6B','#FFF5F5','#8B0000','#FFFFFF'],
+    vars:{accent:'#FF6B6B',bg:'#FFF5F5',card:'#FFFFFF',text:'#4A0000',muted:'#A06060',border:'rgba(255,107,107,0.15)',header:'#FF6B6B',headerText:'#ffffff'}
+  },
+  {
+    id:'slate',
+    name:'🩶 Slate & Steel',
+    desc:'Soyuq çəlik — minimalist, korporativ, güclü',
+    descEn:'Cold steel — minimalist, corporate, bold',
+    preview:['#64748B','#0F172A','#94A3B8','#1E293B'],
+    vars:{accent:'#94A3B8',bg:'#0F172A',card:'#1E293B',text:'#F1F5F9',muted:'#64748B',border:'rgba(148,163,184,0.15)',header:'#0F172A',headerText:'#94A3B8'}
+  }
+];
+
+function getCurrentUsername() {
+  try { return JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}').username || 'guest'; } catch(e) { return 'guest'; }
+}
+function themeKey()  { return 'cafe_theme_'      + getCurrentUsername(); }
+function themeVKey() { return 'cafe_theme_vars_'  + getCurrentUsername(); }
+function fontKey()   { return 'cafe_font_'        + getCurrentUsername(); }
+function fontVKey()  { return 'cafe_font_vars_'   + getCurrentUsername(); }
+function layoutKey() { return 'cafe_layout_'      + getCurrentUsername(); }
+
+function getActiveThemeId() { return localStorage.getItem(themeKey()) || 'classic'; }
+
+function renderThemePage() {
+  var az = interfaceLang !== 'en';
+  var activeId = getActiveThemeId();
+  var grid = document.getElementById('theme-grid');
+  grid.innerHTML = '';
+  THEMES.forEach(function(theme) {
+    var isActive = theme.id === activeId;
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.style.cssText = 'padding:0;overflow:hidden;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;border:2px solid ' + (isActive ? 'var(--accent)' : 'var(--border)') + ';';
+    card.onmouseenter = function(){ card.style.transform='translateY(-2px)'; card.style.boxShadow='0 6px 20px rgba(0,0,0,0.08)'; };
+    card.onmouseleave = function(){ card.style.transform=''; card.style.boxShadow=''; };
+    card.onclick = function(){ applyTheme(theme.id); };
+
+    // Color strip
+    var strip = document.createElement('div');
+    strip.style.cssText = 'display:flex;height:52px;';
+    theme.preview.forEach(function(col) {
+      var s = document.createElement('div');
+      s.style.cssText = 'flex:1;background:' + col;
+      strip.appendChild(s);
+    });
+
+    // Body
+    var body = document.createElement('div');
+    body.style.cssText = 'padding:0.9rem 1rem;';
+    var activeLabel  = az ? 'Aktiv' : 'Active';
+    var activeStatus = az ? '&#10004; Hal-hazırda aktiv' : '&#10004; Currently active';
+    var selectLabel  = az ? 'Bu temanı seç' : 'Select this theme';
+    var activeTag = isActive ? '<span style="font-size:0.65rem;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--accent);color:#fff">'+activeLabel+'</span>' : '';
+    var actionEl = isActive
+      ? '<div style="font-size:0.74rem;color:var(--accent);margin-top:8px;font-weight:500">'+activeStatus+'</div>'
+      : '<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="event.stopPropagation();applyTheme(\'' + theme.id + '\')">'+selectLabel+'</button>';
+    var themeDesc = az ? theme.desc : (theme.descEn || theme.desc);
+    body.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">' +
+        '<div style="font-weight:500;font-size:0.88rem">' + theme.name + '</div>' + activeTag +
+      '</div>' +
+      '<div style="font-size:0.76rem;color:var(--muted)">' + themeDesc + '</div>' + actionEl;
+
+    card.appendChild(strip);
+    card.appendChild(body);
+    grid.appendChild(card);
+  });
+}
+
+function applyTheme(themeId) {
+  var theme = null;
+  for (var i=0; i<THEMES.length; i++) { if (THEMES[i].id === themeId) { theme = THEMES[i]; break; } }
+  if (!theme) return;
+  localStorage.setItem(themeKey(), themeId);
+  localStorage.setItem(themeVKey(), JSON.stringify(theme.vars));
+  // STATE-ə əlavə et ki JSONBin-ə yazılsın
+  STATE.theme = { id: themeId, vars: theme.vars };
+  saveData();
+  renderThemePage();
+  showToast(interfaceLang==='en' ? '"' + theme.name + '" theme applied' : '"' + theme.name + '" temas\u0131 t\u0259tbiq edildi');
+}
+
+
+// ── FONTS ──
+var FONTS = [
+  { id:'dmsans',       name:'DM Sans',       desc:'Müasir, oxunaqlı',   descEn:'Modern, readable',        body:"'DM Sans', sans-serif",      heading:"'Playfair Display', serif" },
+  { id:'inter',        name:'Inter',          desc:'Texniki, səliqəli',  descEn:'Technical, clean',        body:"'Inter', sans-serif",         heading:"'Inter', sans-serif" },
+  { id:'lora',         name:'Lora',           desc:'Klassik, zərif',     descEn:'Classic, elegant',        body:"'Lora', serif",               heading:"'Lora', serif" },
+  { id:'poppins',      name:'Poppins',        desc:'Dost, yüngül',       descEn:'Friendly, light',         body:"'Poppins', sans-serif",       heading:"'Poppins', sans-serif" },
+  { id:'merriweather', name:'Merriweather',   desc:'Qəzet, etibarlı',    descEn:'Newspaper, trustworthy',  body:"'Merriweather', serif",       heading:"'Merriweather', serif" },
+  { id:'nunito',       name:'Nunito',         desc:'Yumşaq, həvəskar',   descEn:'Soft, enthusiastic',      body:"'Nunito', sans-serif",        heading:"'Nunito', sans-serif" },
+];
+
+function renderFontGrid() {
+  var az = interfaceLang !== 'en';
+  var activeId = localStorage.getItem(fontKey()) || 'dmsans';
+  var grid = document.getElementById('font-grid');
+  grid.innerHTML = '';
+  FONTS.forEach(function(font) {
+    var isActive = font.id === activeId;
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.style.cssText = 'padding:1rem;cursor:pointer;border:2px solid '+(isActive?'var(--accent)':'var(--border)')+';transition:all 0.15s;';
+    card.onclick = function(){ applyFont(font.id); };
+    var activeLabel  = az ? 'Aktiv' : 'Active';
+    var activeStatus = az ? '✔ Aktiv' : '✔ Active';
+    var selectLabel  = az ? 'Seç' : 'Select';
+    var fontDesc = az ? font.desc : (font.descEn || font.desc);
+    card.innerHTML =
+      '<div style="font-family:'+font.body+';font-size:1.3rem;font-weight:600;margin-bottom:4px">Aa</div>' +
+      '<div style="font-weight:500;font-size:0.85rem;display:flex;align-items:center;justify-content:space-between">' +
+        font.name +
+        (isActive ? '<span style="font-size:0.65rem;padding:1px 7px;border-radius:6px;background:var(--accent);color:#fff">'+activeLabel+'</span>' : '') +
+      '</div>' +
+      '<div style="font-size:0.73rem;color:var(--muted)">'+fontDesc+'</div>' +
+      (!isActive ? '<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="event.stopPropagation();applyFont(\''+font.id+'\')">'+selectLabel+'</button>' : '<div style="font-size:0.73rem;color:var(--accent);margin-top:8px;font-weight:500">'+activeStatus+'</div>');
+    grid.appendChild(card);
+  });
+}
+
+function applyFont(fontId) {
+  var font = FONTS.find(function(f){ return f.id===fontId; });
+  if (!font) return;
+  localStorage.setItem(fontKey(), fontId);
+  localStorage.setItem(fontVKey(), JSON.stringify({body: font.body, heading: font.heading}));
+  STATE.font = { id: fontId, body: font.body, heading: font.heading };
+  saveData();
+  renderFontGrid();
+  showToast(interfaceLang==='en' ? '"'+font.name+'" font applied' : '"'+font.name+'" \u015frifti t\u0259tbiq edildi');
+}
+
+// ── LAYOUTS ──
+var LAYOUTS = [
+  { id:'list', name:'Siyahı', nameEn:'List',  desc:'Horizontal, kompakt',  descEn:'Horizontal, compact', icon:'≡' },
+  { id:'card', name:'Kart',   nameEn:'Card',  desc:'Böyük kart, şəkilli',  descEn:'Large card, with image', icon:'▦' },
+  { id:'grid', name:'Grid',   nameEn:'Grid',  desc:'2 sütun, sıx',         descEn:'2 columns, dense', icon:'⊞' },
+];
+
+function renderLayoutGrid() {
+  var az = interfaceLang !== 'en';
+  var activeId = localStorage.getItem(layoutKey()) || 'list';
+  var grid = document.getElementById('layout-grid');
+  grid.innerHTML = '';
+  LAYOUTS.forEach(function(layout) {
+    var isActive = layout.id === activeId;
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.style.cssText = 'padding:1rem;cursor:pointer;border:2px solid '+(isActive?'var(--accent)':'var(--border)')+';text-align:center;transition:all 0.15s;';
+    card.onclick = function(){ applyLayout(layout.id); };
+    var activeStatus = az ? '✔ Aktiv' : '✔ Active';
+    var layoutName = az ? layout.name : (layout.nameEn || layout.name);
+    var layoutDesc = az ? layout.desc : (layout.descEn || layout.desc);
+    card.innerHTML =
+      '<div style="font-size:1.8rem;margin-bottom:6px;color:'+(isActive?'var(--accent)':'var(--muted)')+'">'+layout.icon+'</div>' +
+      '<div style="font-weight:500;font-size:0.85rem">'+layoutName+'</div>' +
+      '<div style="font-size:0.72rem;color:var(--muted)">'+layoutDesc+'</div>' +
+      (isActive ? '<div style="font-size:0.72rem;color:var(--accent);margin-top:6px;font-weight:500">'+activeStatus+'</div>' : '');
+    grid.appendChild(card);
+  });
+}
+
+function applyLayout(layoutId) {
+  localStorage.setItem(layoutKey(), layoutId);
+  STATE.layout = layoutId;
+  saveData();
+  renderLayoutGrid();
+  var l = LAYOUTS.find(function(l){return l.id===layoutId;});
+  showToast(interfaceLang==='en' ? '"'+(l.nameEn||l.name)+'" layout applied' : '"'+l.name+'" layoutu t\u0259tbiq edildi');
+}
+
+// ── CUSTOM CSS ──
+function loadCustomCssInput() {
+  var saved = localStorage.getItem('cafe_custom_css') || '';
+  document.getElementById('custom-css-input').value = saved;
+}
+
+function saveCustomCss() {
+  var css = document.getElementById('custom-css-input').value.trim();
+  localStorage.setItem('cafe_custom_css', css);
+  STATE.customCss = css;
+  saveData();
+  showToast(interfaceLang==='en'?'Custom CSS saved':'Özel CSS yadda saxlandı');
+}
+
+function clearCustomCss() {
+  document.getElementById('custom-css-input').value = '';
+  localStorage.removeItem('cafe_custom_css');
+  STATE.customCss = '';
+  saveData();
+  showToast(interfaceLang==='en'?'Custom CSS cleared':'Özel CSS silindi');
+}
+
+// Override renderThemePage to also render font/layout/css
+var _origRenderThemePage = renderThemePage;
+renderThemePage = function() {
+  _origRenderThemePage();
+  renderFontGrid();
+  renderLayoutGrid();
+  loadCustomCssInput();
+};
+
+// ── QR ──
+function getMyMenuUrl() {
+  // Giriş etmiş userin öz menyu URL-i: /menu?user=<username>
+  var session = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
+  var username = session.username || '';
+  var base = window.location.origin + '/menu';
+  return username ? base + '?user=' + encodeURIComponent(username) : base;
+}
+
+function generateQRCode(autoUrl) {
+  var url = autoUrl || getMyMenuUrl();
+
+  // User link kutucuğunu doldur
+  var userLinkEl = document.getElementById('qr-user-link');
+  if (userLinkEl) userLinkEl.textContent = getMyMenuUrl();
+
+  try {
+    var canvas = document.getElementById('qr-canvas');
+    new QRious({ element: canvas, value: url, size: 220, foreground: '#1C1917', background: '#FFFFFF', level: 'H', padding: 16 });
+    canvas.style.display = 'block';
+    document.getElementById('qr-url-display').textContent = url;
+  } catch(e) { showToast(interfaceLang==='en'?'Failed to generate QR':'QR yaratmaq alınmadı'); }
+}
+
+function downloadQRCode() {
+  var canvas = document.getElementById('qr-canvas');
+  if (!canvas.width) { showToast(interfaceLang==='en'?'Generate QR first':'Əvvəlcə QR yaradın'); return; }
+  var session = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
+  var username = session.username || 'menu';
+  var a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = username + '-menu-qr.png';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast(interfaceLang==='en'?'PNG downloaded':'PNG yükləndi');
+}
+
+function copyQrLink() {
+  var url = document.getElementById('qr-user-link').textContent.trim() || document.getElementById('qr-url-display').textContent.trim() || getMyMenuUrl();
+  if (!url) { showToast(interfaceLang==='en'?'No link found':'Link yoxdur'); return; }
+  var btn = document.getElementById('copy-link-btn');
+  navigator.clipboard.writeText(url).then(function(){
+    showToast(interfaceLang==='en'?'Link copied':'Link kopyalandı');
+    if (btn) {
+      btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      btn.style.borderColor = '#16a34a';
+      btn.style.color = '#16a34a';
+      setTimeout(function(){
+        btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        btn.style.borderColor = 'var(--border)';
+        btn.style.color = 'var(--muted)';
+      }, 2000);
+    }
+  }).catch(function(){ showToast(interfaceLang==='en'?'Copy failed':'Kopyalamaq alınmadı'); });
+}
+
+// ── SETTINGS ──
+
+// Interface language
+var interfaceLang = localStorage.getItem('admin_lang') || 'az';
+
+var I18N = {
+  az: {
+    nav_dashboard: 'Dashboard',
+    nav_cafe: 'Kafe məlumatı',
+    nav_menu: 'Menyu',
+    nav_categories: 'Kateqoriyalar',
+    nav_print: 'Çap / PDF',
+    nav_analytics: 'Statistika',
+    nav_theme: 'Görünüş',
+    nav_qr: 'QR Kod',
+    nav_subs: 'Abunələr',
+    nav_settings: 'Ayarlar',
+    logout: 'Çıxış',
+    settings: 'Ayarlar',
+    interfaceLang: 'İnterfeys dili',
+    langNote: 'Bu ayar yalnız admin panel interfeysinə təsir edir.',
+    users: 'İstifadəçilər',
+    addUser: '+ İstifadəçi əlavə et',
+    recoveryEmail: 'Bərpa email-i',
+    recoveryEmailNote: '"Şifrəmi unutdum" funksiyası üçün email ünvanı əlavə edin. Şifrəni unutduqda bu ünvana sıfırlama linki göndəriləcək.',
+    emailAddr: 'Email ünvanı',
+    save: 'Yadda saxla',
+    changePass: 'Şifrə dəyiş',
+    currentPass: 'Cari şifrə',
+    newPass: 'Yeni şifrə',
+    newPass2: 'Yeni şifrə (təkrar)',
+    updatePass: 'Şifrəni yenilə',
+    addItem: '+ Məhsul əlavə et',
+    // Dashboard
+    stat_items: 'Məhsullar',
+    stat_cats: 'Kateqoriyalar',
+    stat_subs: 'Aktiv abunəçi',
+    stat_mrr: 'Aylıq gəlir (MRR)',
+    recent: 'Son əlavə edilən məhsullar',
+    col_product: 'Məhsul',
+    col_category: 'Kateqoriya',
+    col_price: 'Qiymət',
+    col_badge: 'Badge',
+    // Menu page
+    search_placeholder: 'Məhsul axtar...',
+    all: 'Hamısı',
+    active: 'Aktiv',
+    inactive: 'Deaktiv',
+    col_status: 'Status',
+    col_action: 'Əməliyyat',
+    drag_note: '☰ sütununu sürükləyərək məhsulların sırasını dəyişə bilərsiniz.',
+    // Categories
+    addCat: '+ Kateqoriya əlavə et',
+    // Analytics
+    clearStats: '🗑 Sıfırla',
+    menuOpens: 'Menyu açılması',
+    itemViews: 'Məhsul baxışı',
+    topItem: 'Ən populyar',
+    topCat: 'Ən çox baxılan kateqoriya',
+    last7days: '📅 Son 7 gün — menyu açılması',
+    catShare: '📂 Kateqoriya üzrə baxış payı',
+    topProducts: '🍽️ Ən çox baxılan məhsullar',
+    col_views: 'Baxış',
+    col_share: 'Payı',
+    statNote: 'Statistika müştərinin menu.html-də etdiyi hərəkətlər əsasında toplanır.',
+    // Cafe
+    save: 'Yadda saxla',
+    noLogo: 'Loqo yoxdur',
+    logoDesc: 'Loqonuzu yükləyin — menu.html səhifəsinin header-ində görünəcək.',
+    logoTip: 'Tövsiyə: kvadrat format, minimum 200×200px, PNG və ya JPG.',
+    whatsapp: 'WhatsApp nömrəsi',
+    whatsappHint: 'Ölkə kodu ilə, boşluqsuz',
+    instagram: 'Instagram',
+    instagramHint: '@ işarəsiz istifadəçi adı',
+    tiktok: 'TikTok',
+    tiktokHint: '@ işarəsiz istifadəçi adı',
+    mapsLink: 'Google Maps linki',
+    mapsHint: 'Google Maps-dan "Linki kopyala" ilə alın',
+    // Print
+    printCat: 'Kateqoriya',
+    printLang: 'Dil',
+    langAz: 'Azərbaycan',
+    langBoth: 'Hər ikisi',
+    printLogo: 'Loqo göstər',
+    printPrice: 'Qiymət göstər',
+    yes: 'Bəli',
+    no: 'Xeyr',
+    printPreview: '👁 Önizləmə / PDF saxla',
+    printDirect: '🖨️ Birbaşa çap et',
+    printNote: 'Önizləmə pəncərəsində brauzerinizin "Çap et" → "PDF olaraq saxla" seçimini istifadə edin.',
+    // Theme
+    themeNote: 'Seçdiyiniz tema menu.html səhifəsində avtomatik tətbiq olunur.',
+    // QR
+    qrGenerate: 'Yarat',
+    qrNote: 'GitHub Pages, Netlify və ya Vercel ilə pulsuz yerləşdirə bilərsiniz.',
+    qrEnterLink: 'Link daxil edin',
+    qrDownload: '⬇ PNG yüklə',
+    qrCopyLink: '🔗 Linki kopyala',
+    qrHow: 'Necə istifadə etmək olar?',
+    qrStep1: 'menu.html faylını serverə yükləyin',
+    qrStep2: 'Linki daxil edib Yarat düyməsinə basın',
+    qrStep3: 'QR kodu PNG kimi yükləyib çap edin',
+    statNote: 'Statistika müştərinin menu.html-də etdiyi hərəkətlər əsasında toplanır.',
+    // Cafe info
+    panelTheme: '🖥️ Panel teması',
+    panelThemeNote: 'Admin panelin görünüşü',
+    usersNote: 'Admin panel istifadəçiləri',
+    plans: '💳 Planlar',
+    themeLight: '☀️ Ağ',
+    themeDark: '🌙 Tünd',
+    qrGenerate: 'Yarat',
+    qrEnterLink: 'Link daxil edin',
+    qrNote: 'GitHub Pages, Netlify və ya Vercel ilə pulsuz yerləşdirə bilərsiniz.',
+    detailsAz: 'Ətraflı məlumat (AZ)',
+    detailsEn: 'Ətraflı məlumat (EN)',
+    cafeInfo: 'Kafe məlumatı',
+    basicInfo: '📋 Əsas məlumat',
+    logo: '🖼️ Loqo',
+    integration: '🔗 İnteqrasiya',
+    preview: 'Önizləmə — menyuda belə görünəcək:',
+    // QR
+    menuLink: 'Menyu linki',
+    // Print
+    printTitle: 'Çap / PDF',
+    template: '📐 Şablon seçin',
+    params: '⚙️ Parametrlər',
+    // Theme
+    themeTitle: 'Görünüş',
+    colorThemes: '🎨 Rəng temaları',
+    fontTitle: '🔤 Şrift seçimi',
+    layoutTitle: '📐 Kart layoutu',
+    customCss: '✏️ Özel CSS',
+    // QR yeni açarlar
+    qrSectionTitle: '📷 Menyu QR Kodu',
+    qrScanLabel: 'Menyu üçün skan edin',
+    qrYourLink: '👤 Sizin menyu linkiniz',
+    qrLinkDesc: 'Bu link yalnız <strong>sizin</strong> menyunuzu açır. QR kodu bu linkdən yaranır.',
+    qrStep1New: 'QR kodu avtomatik hazırdır — <b>PNG yüklə</b> düyməsinə basın',
+    qrStep2New: 'QR şəklini çap edib masaya qoyun',
+    qrStep3New: 'Müştəri skan edəndə <b>birbaşa sizin menyunuza</b> keçir',
+  },
+  en: {
+    nav_dashboard: 'Dashboard',
+    nav_cafe: 'Cafe Info',
+    nav_menu: 'Menu',
+    nav_categories: 'Categories',
+    nav_print: 'Print / PDF',
+    nav_analytics: 'Analytics',
+    nav_theme: 'Appearance',
+    nav_qr: 'QR Code',
+    nav_subs: 'Subscriptions',
+    nav_settings: 'Settings',
+    logout: 'Logout',
+    settings: 'Settings',
+    interfaceLang: 'Interface Language',
+    langNote: 'This setting only affects the admin panel interface.',
+    users: 'Users',
+    addUser: '+ Add User',
+    recoveryEmail: 'Recovery Email',
+    recoveryEmailNote: 'Add your email address for the "Forgot password" feature. A reset link will be sent here if you forget your password.',
+    emailAddr: 'Email address',
+    save: 'Save',
+    changePass: 'Change Password',
+    currentPass: 'Current password',
+    newPass: 'New password',
+    newPass2: 'New password (repeat)',
+    updatePass: 'Update Password',
+    addItem: '+ Add Item',
+    // Dashboard
+    stat_items: 'Products',
+    stat_cats: 'Categories',
+    stat_subs: 'Active Subscribers',
+    stat_mrr: 'Monthly Revenue (MRR)',
+    recent: 'Recently Added Items',
+    col_product: 'Product',
+    col_category: 'Category',
+    col_price: 'Price',
+    col_badge: 'Badge',
+    // Menu page
+    search_placeholder: 'Search items...',
+    all: 'All',
+    active: 'Active',
+    inactive: 'Inactive',
+    col_status: 'Status',
+    col_action: 'Action',
+    drag_note: 'Drag the ☰ column to reorder items.',
+    // Categories
+    addCat: '+ Add Category',
+    // Analytics
+    clearStats: '🗑 Reset',
+    menuOpens: 'Menu Opens',
+    itemViews: 'Item Views',
+    topItem: 'Most Popular',
+    topCat: 'Top Category',
+    last7days: 'Last 7 Days — Menu Opens',
+    catShare: 'Views by Category',
+    topProducts: 'Most Viewed Items',
+    statNote: 'Statistics are collected from customer interactions on menu.html.',
+    // Cafe info
+    panelTheme: '🖥️ Panel Theme',
+    panelThemeNote: 'Admin panel appearance',
+    usersNote: 'Admin panel users',
+    plans: '💳 Plans',
+    themeLight: '☀️ Light',
+    themeDark: '🌙 Dark',
+    qrGenerate: 'Generate',
+    qrEnterLink: 'Enter link',
+    qrNote: 'You can host for free with GitHub Pages, Netlify or Vercel.',
+    detailsAz: 'Details (AZ)',
+    detailsEn: 'Details (EN)',
+    cafeInfo: 'Cafe Information',
+    basicInfo: '📋 Basic Information',
+    logo: '🖼️ Logo',
+    integration: '🔗 Integration',
+    preview: 'Preview — how it will look on the menu:',
+    // QR
+    menuLink: 'Menu Link',
+    // Print
+    printTitle: 'Print / PDF',
+    template: '📐 Choose Template',
+    params: '⚙️ Settings',
+    // Analytics
+    last7days: '📅 Last 7 Days — Menu Opens',
+    catShare: '📂 Views by Category',
+    topProducts: '🍽️ Most Viewed Items',
+    col_views: 'Views',
+    col_share: 'Share',
+    statNote: 'Stats are collected based on customer activity in menu.html.',
+    // Cafe
+    save: 'Save',
+    noLogo: 'No logo',
+    logoDesc: 'Upload your logo — it will appear in the menu.html header.',
+    logoTip: 'Recommended: square format, minimum 200×200px, PNG or JPG.',
+    whatsapp: 'WhatsApp number',
+    whatsappHint: 'With country code, no spaces',
+    instagram: 'Instagram',
+    instagramHint: 'Username without @ symbol',
+    tiktok: 'TikTok',
+    tiktokHint: 'Username without @ symbol',
+    mapsLink: 'Google Maps link',
+    mapsHint: 'Use "Copy link" from Google Maps',
+    // Print
+    printCat: 'Category',
+    printLang: 'Language',
+    langAz: 'Azerbaijani',
+    langBoth: 'Both',
+    printLogo: 'Show logo',
+    printPrice: 'Show price',
+    yes: 'Yes',
+    no: 'No',
+    printPreview: '👁 Preview / Save PDF',
+    printDirect: '🖨️ Print directly',
+    printNote: 'In the preview window, use your browser\'s "Print" → "Save as PDF" option.',
+    // Theme
+    themeNote: 'The selected theme is automatically applied to menu.html.',
+    // QR
+    qrGenerate: 'Generate',
+    qrNote: 'You can host for free with GitHub Pages, Netlify or Vercel.',
+    qrEnterLink: 'Enter link',
+    qrDownload: '⬇ Download PNG',
+    qrCopyLink: '🔗 Copy link',
+    qrHow: 'How to use?',
+    qrStep1: 'Upload menu.html to a server',
+    qrStep2: 'Enter the link and click Generate',
+    qrStep3: 'Download the QR code as PNG and print it',
+    // Theme
+    themeTitle: 'Appearance',
+    colorThemes: '🎨 Color Themes',
+    fontTitle: '🔤 Font Selection',
+    layoutTitle: '📐 Card Layout',
+    customCss: '✏️ Custom CSS',
+    // QR new keys
+    qrSectionTitle: '📷 Menu QR Code',
+    qrScanLabel: 'Scan for menu',
+    qrYourLink: '👤 Your menu link',
+    qrLinkDesc: 'This link opens <strong>only your</strong> menu. The QR code is generated from this link.',
+    qrStep1New: 'QR code is ready automatically — click <b>Download PNG</b>',
+    qrStep2New: 'Print the QR image and place it on the table',
+    qrStep3New: 'When customers scan, they go <b>directly to your menu</b>',
+  }
+};
+
+function applyI18n(lang) {
+  var t = I18N[lang] || I18N['az'];
+  var az = lang === 'az';
+
+  // 1. data-i18n atributlu bütün elementlər
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var key = el.getAttribute('data-i18n');
+    if (t[key] !== undefined) el.textContent = t[key];
+  });
+
+  // 2. Aktiv səhifənin başlığı
+  var activePage = document.querySelector('.page.active');
+  if (activePage) {
+    var titleEl = activePage.querySelector('.page-title[data-i18n]');
+    if (titleEl) titleEl.textContent = t[titleEl.getAttribute('data-i18n')] || titleEl.textContent;
+  }
+
+  // 3. Axtarış placeholder
+  var searchEl = document.getElementById('menu-search-input');
+  if (searchEl) searchEl.placeholder = t['search_placeholder'];
+
+  // 4. Menyu status filter
+  var sf = document.getElementById('menu-status-filter');
+  if (sf && sf.options.length >= 3) {
+    sf.options[0].text = t['all'];
+    sf.options[1].text = t['active'];
+    sf.options[2].text = t['inactive'];
+  }
+
+  // 5. Login düyməsi
+  var loginBtn = document.getElementById('login-btn');
+  if (loginBtn && !loginBtn.disabled) loginBtn.textContent = az ? 'Daxil ol' : 'Login';
+
+  // 6. Sənəd başlığı
+  document.title = az ? 'Admin Panel — Üçbucaq Restoran' : 'Admin Panel — Üçbucaq Restaurant';
+
+  // 7. Drawer: Məhsul əlavə et / düzəlt
+  var drawerTitle = document.getElementById('drawer-title');
+  // Yalnız "əlavə et" vəziyyətindəsə dəyiş (düzəlt zamanı editItem tərəfindən qoyulur)
+  if (drawerTitle && editingItemIdx === null) drawerTitle.textContent = az ? 'Məhsul əlavə et' : 'Add Item';
+
+  // 8. Form label-ləri — Məhsul drawer
+  var itemLabels = {
+    'label-name-az': az ? 'Ad (AZ)' : 'Name (AZ)',
+    'label-name-en': az ? 'Ad (EN)' : 'Name (EN)',
+    'label-desc-az': az ? 'Təsvir (AZ)' : 'Description (AZ)',
+    'label-desc-en': az ? 'Təsvir (EN)' : 'Description (EN)',
+    'label-price':   az ? 'Qiymət (AZN)' : 'Price (AZN)',
+    'label-badge':   az ? 'Badge' : 'Badge',
+    'label-icon':    az ? 'Emoji (şəkil yoxdursa)' : 'Emoji (if no image)',
+    'label-cat':     az ? 'Kateqoriya' : 'Category',
+    'label-img':     az ? 'Şəkil' : 'Image',
+    'label-tags':    az ? 'Tags (vergüllə ayır)' : 'Tags (comma separated)',
+  };
+  Object.keys(itemLabels).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = itemLabels[id];
+  });
+
+  // 9. Badge select options
+  var badge = document.getElementById('f-badge');
+  if (badge && badge.options.length >= 3) {
+    badge.options[0].text = az ? 'Yoxdur' : 'None';
+    badge.options[1].text = az ? 'Yeni' : 'New';
+    badge.options[2].text = az ? 'Məşhur' : 'Popular';
+  }
+
+  // 10. Drawer düymələri
+  var els = {
+    'item-drawer-cancel': az ? 'Ləğv et' : 'Cancel',
+    'item-drawer-save':   az ? 'Yadda saxla' : 'Save',
+    'cat-drawer-cancel':  az ? 'Ləğv et' : 'Cancel',
+    'cat-drawer-save':    az ? 'Yadda saxla' : 'Save',
+    'item-img-del-btn':   az ? '🗑 Şəkli sil' : '🗑 Remove image',
+    'cf-img-del-btn':     az ? '🗑 Şəkli sil' : '🗑 Remove image',
+  };
+  Object.keys(els).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = els[id];
+  });
+
+  // 11. Kafe məlumatı formu label-ləri
+  var cafeLabels = {
+    'label-cafe-name-az': az ? 'Kafe adı (AZ)' : 'Cafe name (AZ)',
+    'label-cafe-name-en': az ? 'Kafe adı (EN)' : 'Cafe name (EN)',
+    'label-cafe-addr-az': az ? 'Ünvan (AZ)' : 'Address (AZ)',
+    'label-cafe-addr-en': az ? 'Ünvan (EN)' : 'Address (EN)',
+    'label-cafe-phone':   az ? 'Telefon' : 'Phone',
+    'label-cafe-service-fee': az ? 'Xidmət haqqı (%)' : 'Service Charge (%)'
+  };
+  Object.keys(cafeLabels).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = cafeLabels[id];
+  });
+  // Xidmət haqqı hint
+  var sfHint = document.getElementById('hint-cafe-service-fee');
+  if (sfHint) sfHint.textContent = az
+    ? '0 daxil etsəniz xidmət haqqı göstərilməz. Menyu səhifəsinin altında yazı kimi görünür.'
+    : 'Enter 0 to hide the service charge. Shown as a note at the bottom of the menu page.';
+
+  // 12. Placeholder-lər
+  var placeholders = {
+    'cafe-name-az': az ? 'Üçbucaq Restoran' : 'Üçbucaq Restaurant',
+    'cafe-name-en': az ? 'Üçbucaq Restoran' : 'Üçbucaq Restaurant',
+    'cafe-addr-az': az ? 'Bakı, Nizami küçəsi 42' : '42 Nizami Street, Baku',
+    'cafe-addr-en': az ? 'Bakı, Nizami küçəsi 42' : '42 Nizami Street, Baku',
+    'cafe-phone':   '+994 50 000 00 00',
+    's-cur-pass':   az ? 'Cari şifrə' : 'Current password',
+    's-new-pass':   az ? 'Yeni şifrə' : 'New password',
+    's-new-pass2':  az ? 'Yeni şifrə (təkrar)' : 'Repeat new password',
+    'f-name-az':    az ? 'Məhsul adı' : 'Product name',
+    'f-name-en':    az ? 'Məhsul adı (EN)' : 'Product name (EN)',
+    'f-price':      '3.50',
+    'f-tags':       az ? '30ml, Şəkərsiz, Vegan' : '30ml, Sugar-free, Vegan',
+    'cf-label-az':  az ? 'Qəhvə' : 'Coffee',
+    'cf-label-en':  az ? 'Qəhvə' : 'Coffee',
+  };
+  Object.keys(placeholders).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.placeholder = placeholders[id];
+  });
+
+  // 13. Menyu cədvəli header-i
+  var thProduct = document.querySelector('th[data-i18n="col_product"]');
+  var thCat     = document.querySelector('th[data-i18n="col_category"]');
+  var thPrice   = document.querySelector('th[data-i18n="col_price"]');
+  var thBadge   = document.querySelector('th[data-i18n="col_badge"]');
+  if (thProduct) thProduct.textContent = az ? 'Məhsul' : 'Product';
+  if (thCat)     thCat.textContent     = az ? 'Kateqoriya' : 'Category';
+  if (thPrice)   thPrice.textContent   = az ? 'Qiymət' : 'Price';
+  if (thBadge)   thBadge.textContent   = az ? 'Badge' : 'Badge';
+
+  // 14. "Məhsul əlavə et" düyməsi
+  var addItemBtn = document.querySelector('[data-i18n="addItem"]');
+  if (addItemBtn) addItemBtn.textContent = t['addItem'];
+
+  // 15. Kateqoriya əlavə et düyməsi
+  var addCatBtn = document.querySelector('[data-i18n="addCat"]');
+  if (addCatBtn) addCatBtn.textContent = t['addCat'];
+
+  // 16. Drag note
+  var dragNote = document.querySelector('[data-i18n="drag_note"]');
+  if (dragNote) dragNote.textContent = t['drag_note'];
+
+  // 17. Çap/PDF bölməsi
+  var printLabels = document.querySelectorAll('[data-i18n="template"],[data-i18n="params"],[data-i18n="printTitle"]');
+  printLabels.forEach(function(el) { el.textContent = t[el.getAttribute('data-i18n')]; });
+
+  // 18. Tema bölməsi
+  var themeLabels = document.querySelectorAll('[data-i18n="themeTitle"],[data-i18n="colorThemes"],[data-i18n="fontTitle"],[data-i18n="layoutTitle"]');
+  themeLabels.forEach(function(el) { el.textContent = t[el.getAttribute('data-i18n')]; });
+
+  // 19. Kateqoriya drawer label-ləri
+  var catDrawerLabels = {
+    'label-cf-az': az ? 'Ad (AZ)' : 'Name (AZ)',
+    'label-cf-en': az ? 'Ad (EN)' : 'Name (EN)',
+    'label-cf-img': az ? 'Şəkil' : 'Image',
+  };
+  Object.keys(catDrawerLabels).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = catDrawerLabels[id];
+  });
+
+  // 20. Tema düymələri (settings)
+  var lightBtn = document.getElementById('theme-btn-light');
+  var darkBtn  = document.getElementById('theme-btn-dark');
+  if (lightBtn) lightBtn.textContent = az ? '☀️ Ağ' : '☀️ Light';
+  if (darkBtn)  darkBtn.textContent  = az ? '🌙 Tünd' : '🌙 Dark';
+
+  // 21. QR hissəsi
+  var qrGenBtn = document.querySelector('button[onclick="generateQRCode()"]');
+  if (qrGenBtn) qrGenBtn.textContent = az ? 'Yarat' : 'Generate';
+
+  // 21b. QR innerHTML elementlər (bold teq saxlamaq üçün)
+  var qrLinkDescEl = document.querySelector('[data-i18n="qrLinkDesc"]');
+  if (qrLinkDescEl) qrLinkDescEl.innerHTML = t['qrLinkDesc'] || qrLinkDescEl.innerHTML;
+  var qrStep1El = document.querySelector('[data-i18n="qrStep1New"]');
+  if (qrStep1El) qrStep1El.innerHTML = t['qrStep1New'] || qrStep1El.innerHTML;
+  var qrStep2El = document.querySelector('[data-i18n="qrStep2New"]');
+  if (qrStep2El) qrStep2El.innerHTML = t['qrStep2New'] || qrStep2El.innerHTML;
+  var qrStep3El = document.querySelector('[data-i18n="qrStep3New"]');
+  if (qrStep3El) qrStep3El.innerHTML = t['qrStep3New'] || qrStep3El.innerHTML;
+
+  // 22. Drawer ətraflı məlumat label-ləri
+  document.querySelectorAll('label:not([id])').forEach(function(lbl) {
+    var txt = lbl.textContent.trim();
+    if (txt === 'Ətraflı məlumat (AZ)' || txt === 'Details (AZ)') lbl.textContent = az ? 'Ətraflı məlumat (AZ)' : 'Details (AZ)';
+    if (txt === 'Ətraflı məlumat (EN)' || txt === 'Details (EN)') lbl.textContent = az ? 'Ətraflı məlumat (EN)' : 'Details (EN)';
+  });
+
+  // 23. Şəkil seç label-ləri
+  document.querySelectorAll('label[for="f-image-file"], label[for="cf-image-file"]').forEach(function(lbl) {
+    lbl.textContent = az ? '🖼️ Şəkil seç' : '🖼️ Select image';
+  });
+
+  // 24. data-i18n olan bütün digər elementlər (əvvəl işlənməyənlər)
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var key = el.getAttribute('data-i18n');
+    // innerHTML tələb edənləri yuxarıda işlədik — skip et
+    if (['qrLinkDesc','qrStep1New','qrStep2New','qrStep3New'].indexOf(key) !== -1) return;
+    if (t[key] !== undefined) el.textContent = t[key];
+  });
+
+  // 25. Dinamik kartları yenidən render et (dil dəyişdikdə kart mətnləri yenilənsin)
+  if (document.getElementById('theme-grid'))   renderThemePage();
+  if (document.getElementById('font-grid'))    renderFontGrid();
+  if (document.getElementById('layout-grid'))  renderLayoutGrid();
+  if (document.getElementById('print-template-grid')) renderPrintPage();
+  if (document.getElementById('cats-list'))    renderCatsPage();
+  if (document.getElementById('users-list'))   renderUsersList();
+}
+
+function setInterfaceLang(lang) {
+  interfaceLang = lang;
+  localStorage.setItem('admin_lang', lang);
+  var azBtn = document.getElementById('lang-btn-az');
+  var enBtn = document.getElementById('lang-btn-en');
+  if (azBtn) {
+    azBtn.style.background = lang==='az' ? 'var(--accent)' : 'transparent';
+    azBtn.style.color = lang==='az' ? '#000' : 'var(--text)';
+    azBtn.style.borderColor = lang==='az' ? 'var(--accent)' : 'var(--border)';
+  }
+  if (enBtn) {
+    enBtn.style.background = lang==='en' ? 'var(--accent)' : 'transparent';
+    enBtn.style.color = lang==='en' ? '#000' : 'var(--text)';
+    enBtn.style.borderColor = lang==='en' ? 'var(--accent)' : 'var(--border)';
+  }
+  applyI18n(lang);
+  showToast(lang==='az' ? 'Dil: Azərbaycan' : 'Language: English');
+}
+
+// Users — stored in localStorage
+function loadUsers() {
+  try {
+    var u = localStorage.getItem('cafe_users');
+    return u ? JSON.parse(u) : { admin:{pass:'admin123',role:'admin'}, manager:{pass:'cafe2024',role:'manager'} };
+  } catch(e) { return { admin:{pass:'admin123',role:'admin'}, manager:{pass:'cafe2024',role:'manager'} }; }
+}
+function saveUsers(users) { localStorage.setItem('cafe_users', JSON.stringify(users)); }
+
+var editingUserKey = null;
+
+function renderSettingsPage() {
+  // Sync lang buttons
+  setInterfaceLang(interfaceLang);
+  renderUsersList();
+  loadUserEmailInput();
+}
+
+function loadUserEmailInput() {
+  var session = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
+  var username = session.username;
+  if (!username) return;
+  fetch('/api/users/' + username + '/info').then(function(r){ return r.json(); }).then(function(d){
+    if (d.email !== undefined) {
+      var el = document.getElementById('s-email');
+      if (el) el.value = d.email || '';
+    }
+  }).catch(function(){});
+}
+
+function saveUserEmail() {
+  var session = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
+  var username = session.username;
+  if (!username) { showToast(interfaceLang==='en'?'Login required':'Giriş tələb olunur'); return; }
+  var email = (document.getElementById('s-email') || {}).value.trim();
+  fetch('/api/users/' + username + '/email', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username: email})
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.ok) showToast(interfaceLang==='en'?'✅ Email saved':'✅ Email yadda saxlandı');
+    else showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
+  }).catch(function(){ showToast(interfaceLang==='en'?'❌ Connection error':'❌ Bağlantı xətası'); });
+}
+
+function renderUsersList() {
+  var az = interfaceLang !== 'en';
+  var list = document.getElementById('users-list');
+  list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0">'+(az?'Yüklənir...':'Loading...')+'</p>';
+  var sess = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
+  var currentUser = sess.username || '';
+  fetch('/api/users').then(function(r){
+    if (!r.ok) { list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0">'+(az?'Yüklənmə xətası':'Load error')+' (' + r.status + ')</p>'; return null; }
+    return r.json();
+  }).then(function(users){
+    if (!users) return;
+    list.innerHTML = '';
+    var keys = Object.keys(users);
+    if (keys.length === 0) {
+      list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0">'+(az?'İstifadəçi yoxdur':'No users')+'</p>';
+      return;
+    }
+    keys.forEach(function(key) {
+      var u = users[key];
+      var isMe = key === currentUser;
+      var roleLabel = u.role === 'superadmin' ? 'Superadmin' : u.role === 'admin' ? (az?'Administrator':'Administrator') : (az?'Manager':'Manager');
+      var youLabel = az ? 'Siz' : 'You';
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.65rem 0;border-bottom:1px solid var(--border);';
+      row.innerHTML =
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600">' + key.charAt(0).toUpperCase() + '</div>' +
+          '<div>' +
+            '<div style="font-weight:500;font-size:0.88rem">' + key + (isMe ? ' <span style="font-size:0.65rem;padding:1px 6px;background:#eaf3de;color:#3B6D11;border-radius:5px">'+youLabel+'</span>' : '') + '</div>' +
+            '<div style="font-size:0.73rem;color:var(--muted)">' + roleLabel + (u.email ? ' · ' + u.email : '') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button class="btn btn-ghost btn-sm" onclick="openEditUser(\'' + key + '\')">✏️</button>' +
+          (!isMe ? '<button class="btn btn-danger btn-sm" onclick="deleteUser(\'' + key + '\')">🗑</button>' : '') +
+        '</div>';
+      list.appendChild(row);
+    });
+  }).catch(function(e){
+    var az2 = interfaceLang !== 'en';
+    list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0">'+(az2?'Yüklənmə xətası':'Load error')+'</p>';
+  });
+}
+
+function openAddUser() {
+  editingUserKey = null;
+  var session = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
+  document.getElementById('user-drawer-title').textContent = interfaceLang==='en' ? 'Add User' : 'İstifadəçi əlavə et';
+  document.getElementById('u-username').value = '';
+  document.getElementById('u-username').disabled = false;
+  document.getElementById('u-pass').value = '';
+  document.getElementById('u-pass2').value = '';
+  document.getElementById('u-role').value = 'admin';
+  document.getElementById('u-email').value = '';
+  document.getElementById('user-drawer').classList.add('open');
+}
+
+function openEditUser(key) {
+  editingUserKey = key;
+  document.getElementById('user-drawer-title').textContent = interfaceLang==='en' ? 'Edit User' : 'İstifadəçini düzəlt';
+  document.getElementById('u-username').value = key;
+  document.getElementById('u-username').disabled = true;
+  document.getElementById('u-pass').value = '';
+  document.getElementById('u-pass2').value = '';
+  fetch('/api/users/' + key + '/info').then(function(r){ return r.json(); }).then(function(d){
+    document.getElementById('u-role').value = d.role || 'admin';
+    document.getElementById('u-email').value = d.email || '';
+  });
+  document.getElementById('user-drawer').classList.add('open');
+}
+
+function saveUser() {
+  var role = document.getElementById('u-role').value;
+  if (role === 'superadmin') { showToast(interfaceLang==='en'?'Cannot add superadmin role':'Superadmin rolu əlavə edilə bilməz'); return; }
+  var username = document.getElementById('u-username').value.trim().toLowerCase();
+  var pass  = document.getElementById('u-pass').value;
+  var pass2 = document.getElementById('u-pass2').value;
+  var role  = document.getElementById('u-role').value;
+  if (!username) { showToast(interfaceLang==='en'?'Username is required':'İstifadəçi adı tələb olunur'); return; }
+  if (pass && pass !== pass2) { showToast(interfaceLang==='en'?'Passwords do not match':'Şifrələr uyğun deyil'); return; }
+
+  if (editingUserKey) {
+    // Rolu yenilə
+    fetch('/api/users/' + editingUserKey + '/role', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({role: role})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.ok) showToast(interfaceLang==='en'?'User updated':'İstifadəçi yeniləndi');
+      else showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
+    });
+    // Emaili yenilə
+    var emailVal = (document.getElementById('u-email') || {}).value;
+    if (emailVal !== undefined) {
+      fetch('/api/users/' + editingUserKey + '/email', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: emailVal.trim()})
+      });
+    }
+    // Şifrə dəyişilibsə onu da yenilə
+    if (pass) {
+      fetch('/api/users/' + editingUserKey + '/set-password', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({password: pass})
+      });
+    }
+  } else {
+    if (!pass) { showToast(interfaceLang==='en'?'Password is required':'Şifrə tələb olunur'); return; }
+    fetch('/api/users', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: username, password: pass, role: role, email: document.getElementById('u-email').value.trim()})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.ok) showToast(interfaceLang==='en'?'✅ User added':'✅ İstifadəçi əlavə edildi');
+      else showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
+      renderUsersList();
+    });
+  }
+  closeDrawerDirect('user-drawer');
+  setTimeout(renderUsersList, 500);
+}
+
+function deleteUser(key) {
+  showConfirm(interfaceLang==='en'?'Delete User':'İstifadəçini sil', interfaceLang==='en'?'"' + key + '" user and all their data will be deleted.':'"' + key + '" istifadəçisi və bütün məlumatları silinəcək.', function(){
+    fetch('/api/users/' + key, {method: 'DELETE'})
+      .then(function(r){ return r.json(); }).then(function(d){
+        if (d.ok) { showToast(interfaceLang==='en'?'User deleted':'İstifadəçi silindi'); renderUsersList(); }
+        else showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
+      });
+  }, '👤');
+}
+
+function syncCredentials(users) {
+  // Sync CREDENTIALS object so login works immediately
+  Object.keys(CREDENTIALS).forEach(function(k){ delete CREDENTIALS[k]; });
+  Object.keys(users).forEach(function(k){ CREDENTIALS[k] = users[k].pass; });
+}
+
+// Change password
+function changePassword() {
+  var cur = document.getElementById('s-cur-pass').value;
+  var nw  = document.getElementById('s-new-pass').value;
+  var nw2 = document.getElementById('s-new-pass2').value;
+  var session = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
+  var username = session.username;
+  if (!cur || !nw || !nw2) { showToast(interfaceLang==='en'?'Fill in all fields':'Bütün xanaları doldurun'); return; }
+  if (nw !== nw2) { showToast(interfaceLang==='en'?'New passwords do not match':'Yeni şifrələr uyğun deyil'); return; }
+  if (nw.length < 6) { showToast(interfaceLang==='en'?'Password must be at least 6 characters':'Şifrə ən az 6 simvol olmalıdır'); return; }
+  fetch('/api/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username: username, password: cur})
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (!d.ok) { showToast(interfaceLang==='en'?'Current password is incorrect':'Cari şifrə yanlışdır'); return; }
+    fetch('/api/users/' + username + '/set-password', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({password: nw})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.ok) {
+        document.getElementById('s-cur-pass').value = '';
+        document.getElementById('s-new-pass').value = '';
+        document.getElementById('s-new-pass2').value = '';
+        showToast(interfaceLang==='en'?'Password updated successfully':'Sifrə uğurla yeniləndi');
+      } else {
+        showToast(d.error || (interfaceLang==='en'?'An error occurred':'Xəta baş verdi'));
+      }
+    });
+  }).catch(function(){ showToast(interfaceLang==='en'?'Connection error':'Bağlantı xətası'); });
+}
+
+// ── HELPERS ──
+function closeDrawer(id, e) { if (e.target===document.getElementById(id)) closeDrawerDirect(id); }
+function closeDrawerDirect(id) { document.getElementById(id).classList.remove('open'); }
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2500);
+}
+
+// ── INIT ──
+
+// File input listeners — onchange atributu bəzən işləmir, addEventListener daha etibarlıdır
+window.addEventListener('load', function() {
+  // Logo
+  var logoInp = document.getElementById('admin-logo-file');
+  if (logoInp) {
+    logoInp.addEventListener('change', function() {
+      if (!this.files || !this.files[0]) return;
+      var file = this.files[0];
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var base64 = e.target.result;
+        STATE.cafe = STATE.cafe || {};
+        STATE.cafe.logo = base64;
+        localStorage.setItem('cafe_logo', base64);
+        saveData();
+        adminLoadLogo();
+        showToast(interfaceLang==='en'?'✅ Logo saved':'✅ Loqo yadda saxlandı');
+      };
+      reader.readAsDataURL(file);
+      logoInp.value = '';
+    });
+  }
+  // Item image
+  var imgInp = document.getElementById('f-image-file');
+  if (imgInp) {
+    imgInp.addEventListener('change', function() {
+      if (!this.files || !this.files[0]) return;
+      var file = this.files[0];
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        tempImageBase64 = e.target.result;
+        var wrap = document.getElementById('img-preview-wrap');
+        if (wrap) wrap.innerHTML = '<img src="' + tempImageBase64 + '" alt="" style="width:100%;height:100%;object-fit:cover">';
+        var imgField = document.getElementById('f-image');
+        if (imgField) imgField.value = '';
+      };
+      reader.readAsDataURL(file);
+      imgInp.value = ''; // sıfırla — eyni faylı yenidən seçmək mümkün olsun
+    });
+  }
+  // Kateqoriya şəkli
+  var catImgInp = document.getElementById('cf-image-file');
+  if (catImgInp) {
+    catImgInp.addEventListener('change', function() {
+      if (!this.files || !this.files[0]) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        tempCatImage = e.target.result;
+        var preview = document.getElementById('cf-img-preview');
+        if (preview) preview.innerHTML = '<img src="'+tempCatImage+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">';
+        var delBtn = document.getElementById('cf-img-del-btn');
+        if (delBtn) delBtn.style.display = '';
+      };
+      reader.readAsDataURL(this.files[0]);
+      catImgInp.value = '';
+    });
+  }
+  // Serverdən data yüklə
+  loadFromServer();
+});
+
+function setEl(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+// ══════════════════════════════════════════
+// ABUNƏLİK İDARƏETMƏ SİSTEMİ (Superadmin)
+// ══════════════════════════════════════════
+
+
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('page-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  if (id === 'dashboard')  renderDashboard();
+  if (id === 'menu')       renderMenuPage();
+  if (id === 'categories') renderCatsPage();
+  if (id === 'cafe')       loadCafeForm();
+  if (id === 'theme')      renderThemePage();
+  if (id === 'analytics')  renderAnalytics();
+  if (id === 'print')      renderPrintPage();
+  if (id === 'settings')   { renderSettingsPage(); setTimeout(updateAdminThemeBtns, 50); }
+  if (id === 'qr')         { setTimeout(function(){ generateQRCode(getMyMenuUrl()); }, 100); }
+}
+
+// ══════════════════════════════════════════
+
+function toggleSettingsPass(inputId, btn) {
+  var inp = document.getElementById(inputId);
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.textContent = '🔓'; // görünür
+  } else {
+    inp.type = 'password';
+    btn.textContent = '🔒'; // gizlidir
+  }
+}
+
+// ── ADMIN PANEL TEMA ──
+function setAdminTheme(mode) {
+  if (mode === 'dark') {
+    document.body.classList.add('admin-dark');
+    localStorage.setItem('adminTheme', 'dark');
+  } else {
+    document.body.classList.remove('admin-dark');
+    localStorage.setItem('adminTheme', 'light');
+  }
+  updateAdminThemeBtns();
+}
+function toggleAdminTheme() {
+  setAdminTheme(document.body.classList.contains('admin-dark') ? 'light' : 'dark');
+}
+function updateAdminThemeBtns() {
+  var isDark = document.body.classList.contains('admin-dark');
+  var lBtn = document.getElementById('theme-btn-light');
+  var dBtn = document.getElementById('theme-btn-dark');
+  if (!lBtn || !dBtn) return;
+  lBtn.style.borderColor = isDark ? 'var(--border)' : 'var(--accent)';
+  dBtn.style.borderColor = isDark ? 'var(--accent)' : 'var(--border)';
+}
+(function applyAdminTheme() {
+  var saved = localStorage.getItem('adminTheme');
+  if (saved === 'dark') {
+    document.body.classList.add('admin-dark');
+  }
+  // Delay to ensure DOM is ready
+  setTimeout(updateAdminThemeBtns, 100);
+})();
+
+checkSession();
+checkResetToken();
+// Apply saved language on load
+applyI18n(interfaceLang);
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Üçbucaq Restoran — Menyu</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --accent: #C9A84C;
+    --accent2: #F5A623;
+    --bg: #1A1210;
+    --card: #2A1F14;
+    --text: #F5E6C8;
+    --muted: #A08050;
+    --border: rgba(201,168,76,0.22);
+    --header-text: #ffffff;
+    --radius: 18px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    position: relative;
+    overflow: hidden;
+    background: #0E0A06;
+    padding: 1rem 1rem 1rem;
+    text-align: center;
+    border-radius: 0 0 2.5rem 2.5rem;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -20px; left: -30px;
+    width: 120px; height: 120px;
+    background: var(--accent2);
+    opacity: 0.35;
+    border-radius: 50%;
+  }
+
+  /* Dil düyməsi — yuxarı sağ */
+  .lang-toggle {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    display: flex;
+    gap: 3px;
+    z-index: 10;
+  }
+  .lang-btn {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    border-radius: 20px;
+    padding: 3px 9px;
+    font-size: 0.68rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .lang-btn.active {
+    background: #fff;
+    color: var(--accent);
+    border-color: #fff;
+  }
+  .lang-btn:hover:not(.active) { background: rgba(255,255,255,0.3); }
+
+  /* Logo sahəsi */
+  .header-logo-wrap {
+    width: 120px;
+    height: 120px;
+    border-radius: 22px;
+    background: rgba(255,255,255,0.18);
+    border: 2px solid rgba(255,255,255,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.5rem;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+  .header-logo-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  .header-logo-placeholder {
+    color: rgba(255,255,255,0.7);
+    text-align: center;
+  }
+  .header-logo-placeholder span { font-size: 0.9rem; display: block; }
+
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #C9A84C;
+    letter-spacing: 0.5px;
+    position: relative; z-index: 1;
+  }
+  .header p {
+    font-size: 0.75rem;
+    color: var(--header-text, rgba(255,255,255,0.80));
+    opacity: 0.8;
+    margin-top: 2px;
+    position: relative; z-index: 1;
+  }
+
+  /* ── CATEGORY BAR ── */
+  .cats-wrap {
+    padding: 1.25rem 1rem 0.5rem;
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    cursor: grab;
+  }
+  .cats-wrap:active { cursor: grabbing; }
+  .cats-wrap::-webkit-scrollbar { display: none; }
+  .cats {
+    display: flex;
+    gap: 8px;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  /* ── SEARCH ── */
+  .search-wrap {
+    padding: 0.5rem 1rem 0;
+    position: relative;
+  }
+  .search-input {
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 2.4rem;
+    border: 1.5px solid var(--border);
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: var(--card);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232,98,42,0.1);
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-icon {
+    position: absolute;
+    left: 1.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 0.95rem;
+    pointer-events: none;
+  }
+  .search-clear {
+    position: absolute;
+    right: 1.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--muted);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .search-clear.visible { display: flex; }
+  .search-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+    display: none;
+  }
+  .search-empty span { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+  .cat-btn {
+    white-space: nowrap;
+    border: 1.5px solid rgba(201,168,76,0.5);
+    background: transparent;
+    color: #C9A84C;
+    border-radius: 30px;
+    padding: 6px 18px;
+    font-size: 0.82rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .cat-btn.active {
+    background: #1A1210;
+    color: #fff;
+  }
+  .cat-btn:hover:not(.active) {
+    background: rgba(232,98,42,0.07);
+  }
+
+  /* ── SECTIONS ── */
+  .sections { padding: 0.5rem 1rem 1rem; }
+  .section-title {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    margin: 1.2rem 0 0.6rem;
+  }
+
+  /* ── ITEM CARD ── */
+  .item-card {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 14px;
+    margin-bottom: 10px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(232,98,42,0.10);
+  }
+
+  /* GRID layout */
+  [data-layout="grid"] #menu-sections > div {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  [data-layout="grid"] #menu-sections > div > .section-title { grid-column: 1/-1; }
+  [data-layout="grid"] .item-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+    margin-bottom: 0;
+    gap: 8px;
+  }
+  [data-layout="grid"] .item-icon, [data-layout="grid"] .item-card img {
+    width: 100% !important;
+    height: 100px !important;
+    border-radius: 10px;
+    object-fit: cover;
+  }
+  [data-layout="grid"] .item-info { width: 100%; }
+  [data-layout="grid"] .item-price { margin-top: 4px; font-size: 1rem; }
+
+  /* CARD layout */
+  [data-layout="card"] .item-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+  [data-layout="card"] .item-icon, [data-layout="card"] .item-card > img {
+    width: 100% !important;
+    height: 160px !important;
+    border-radius: 0;
+    object-fit: cover;
+  }
+  [data-layout="card"] .item-info { padding: 12px 14px 4px; width: 100%; }
+  [data-layout="card"] .item-price { padding: 0 14px 14px; font-size: 1.1rem; }
+  .item-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  .item-info { flex: 1; min-width: 0; }
+  .item-name {
+    font-size: 0.93rem;
+    font-weight: 500;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .item-desc {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .item-price {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 8px;
+    letter-spacing: 0.2px;
+  }
+  .badge-new { background: #eaf3de; color: #3B6D11; }
+  .badge-hot { background: #FAECE7; color: #993C1D; }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--muted);
+    padding: 1rem 1rem 2rem;
+    border-top: 1px solid var(--border);
+    margin: 0.5rem 1rem 0;
+    border-radius: 0;
+  }
+  .footer strong { color: var(--accent); }
+
+  /* ── HOURS BADGE ── */
+  .hours-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 30px;
+    padding: 5px 14px;
+    font-size: 0.8rem;
+    color: #fff;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: background 0.2s;
+  }
+  .hours-badge:hover { background: rgba(0,0,0,0.5); }
+  .hours-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .hours-dot.open  { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+  .hours-dot.closed-dot { background: #f87171; }
+  .hours-popup {
+    display: none;
+    position: fixed;
+    background: rgba(20,14,10,0.97);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px;
+    padding: 12px 16px;
+    min-width: 230px;
+    z-index: 9999;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    animation: popIn 0.18s cubic-bezier(0.34,1.2,0.64,1) both;
+  }
+  .hours-popup.visible { display: block; }
+  .hours-popup-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.7);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .hours-popup-row:last-child { border-bottom: none; }
+  .hours-popup-row.today { color: #fff; font-weight: 600; }
+  .hours-popup-row .day-name { min-width: 110px; }
+  .hours-popup-row .day-time { color: var(--accent); }
+  .hours-popup-row .day-closed { color: #f87171; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .item-card { animation: fadeUp 0.25s ease both; cursor: pointer; }
+
+  /* ── MODAL OVERLAY ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20,12,8,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    padding: 1.25rem;
+  }
+  .modal-overlay.open { display: flex; }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.93) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-box {
+    background: var(--card);
+    border-radius: 24px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 0 0 2rem;
+    animation: popIn 0.25s cubic-bezier(0.34,1.2,0.64,1) both;
+    position: relative;
+  }
+  .modal-drag {
+    display: none;
+  }
+  .modal-icon-wrap {
+    width: 100%;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 5rem;
+    margin: 1rem 0 0;
+    border-radius: 20px;
+    margin: 1rem 1.5rem 0;
+    width: calc(100% - 3rem);
+  }
+  .modal-body { padding: 1.25rem 1.5rem 0; }
+  .modal-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 0.75rem;
+  }
+  .modal-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .modal-price {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .modal-desc {
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 1.2rem;
+  }
+  .modal-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .modal-tag {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #FFF3E0;
+    color: #993C1D;
+  }
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 16px;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted);
+    line-height: 1;
+  }
+  .modal-close:hover { background: #f0e8e0; }
+
+  /* ── MODAL ADD TO CART ── */
+  .modal-qty-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 1rem;
+  }
+  .qty-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1.5px solid var(--border);
+    border-radius: 30px;
+    overflow: hidden;
+    background: var(--card);
+  }
+  .qty-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 1.3rem;
+    width: 38px;
+    height: 38px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .qty-btn:hover { background: rgba(201,168,76,0.12); }
+  .qty-num {
+    min-width: 30px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .btn-add-cart {
+    flex: 1;
+    background: var(--accent);
+    color: #1A1210;
+    border: none;
+    border-radius: 30px;
+    padding: 0.65rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-add-cart:hover { opacity: 0.88; }
+  .btn-add-cart:active { transform: scale(0.97); }
+
+  /* ── CART FAB ── */
+  .cart-fab {
+    position: fixed;
+    bottom: 1.4rem;
+    right: 1.2rem;
+    background: var(--accent);
+    color: #1A1210;
+    border: none;
+    border-radius: 30px;
+    padding: 0.75rem 1.3rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    z-index: 50;
+    transition: transform 0.15s, opacity 0.2s;
+    animation: popIn 0.25s cubic-bezier(0.34,1.2,0.64,1) both;
+  }
+  .cart-fab:active { transform: scale(0.96); }
+  .cart-fab.visible { display: flex; }
+  .cart-fab-count {
+    background: #1A1210;
+    color: var(--accent);
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+  }
+
+  /* ── CART PANEL ── */
+  .cart-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,6,3,0.65);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+  }
+  .cart-overlay.open { display: flex; }
+  .cart-panel {
+    background: var(--bg);
+    border-radius: 28px 28px 0 0;
+    width: 100%;
+    max-width: 480px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.28s cubic-bezier(0.34,1.1,0.64,1) both;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .cart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 1.4rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .cart-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .cart-close-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted);
+  }
+  .cart-items {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0.8rem 1.2rem;
+  }
+  .cart-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .cart-row:last-child { border-bottom: none; }
+  .cart-item-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .cart-item-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+  .cart-item-name {
+    flex: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .cart-item-price {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+    min-width: 52px;
+    text-align: right;
+  }
+  .cart-qty-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .cart-qty-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 1.1rem;
+    width: 30px; height: 30px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cart-qty-btn:hover { background: rgba(201,168,76,0.1); }
+  .cart-qty-num {
+    min-width: 24px;
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .cart-footer {
+    padding: 1rem 1.4rem 1.6rem;
+    border-top: 1px solid var(--border);
+  }
+  .cart-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .cart-total-label { font-size: 0.85rem; color: var(--muted); }
+  .cart-total-val {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-order {
+    width: 100%;
+    background: var(--accent);
+    color: #1A1210;
+    border: none;
+    border-radius: 30px;
+    padding: 0.85rem;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-order:hover { opacity: 0.88; }
+  .btn-clear-cart {
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 0.55rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+    margin-top: 0.5rem;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.15s;
+  }
+  .btn-clear-cart:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── RESPONSIVE ── */
+  @media (min-width: 540px) {
+    body { display: flex; justify-content: center; }
+    body > .menu-wrap { max-width: 480px; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="menu-wrap">
+
+  <div class="header">
+    <!-- Dil düyməsi — yuxarı sağ -->
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('az')">AZ</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+
+    <!-- Loqo sahəsi -->
+    <div class="header-logo-wrap" id="logo-wrap">
+      <div class="header-logo-placeholder" id="logo-placeholder"><span>🏪</span></div>
+    </div>
+
+    <h1>Üçbucaq Restoran</h1>
+    <p id="cafe-sub">Bakı, Nizami küçəsi 42</p>
+    <div id="social-bar" style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap;position:relative;z-index:1"></div>
+    <div id="hours-badge" style="display:none;margin-top:10px;position:relative;z-index:1"></div>
+  </div>
+
+  <div class="cats-wrap"><div class="cats" id="cat-bar"></div></div>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="menu-search" type="text" placeholder="Axtar..." oninput="onSearch(this.value)">
+    <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+  </div>
+  <div class="search-empty" id="search-empty">
+    <span>🍽️</span>Heç nə tapılmadı
+  </div>
+
+  <div class="sections" id="menu-sections"></div>
+  <!-- XİDMƏT HAQQI BANNERİ -->
+  <div id="service-fee-banner" style="display:none;margin:0 1rem 0.5rem;padding:10px 16px;background:rgba(201,168,76,0.10);border:1px solid rgba(201,168,76,0.28);border-radius:12px;text-align:center;font-size:0.78rem;color:var(--muted)">
+    <span id="service-fee-text"></span>
+  </div>
+
+  <div class="footer" id="footer-note">Zəng etmək üçün: <strong>+994 50 000 00 00</strong></div>
+
+</div>
+
+<!-- CART FAB -->
+<button class="cart-fab" id="cart-fab" onclick="openCart()">
+  🛒 <span id="cart-fab-label">Səbət</span>
+  <span class="cart-fab-count" id="cart-fab-count">0</span>
+</button>
+
+<!-- CART PANEL -->
+<div class="cart-overlay" id="cart-overlay" onclick="cartOverlayClick(event)">
+  <div class="cart-panel">
+    <div class="cart-header">
+      <div class="cart-title" id="cart-title">🛒 Səbət</div>
+      <button class="cart-close-btn" onclick="closeCart()">✕</button>
+    </div>
+    <div class="cart-items" id="cart-items-list"></div>
+    <div class="cart-footer">
+      <div id="cart-service-fee-row" style="display:none;justify-content:space-between;align-items:center;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border)">
+        <span id="cart-service-fee-label" style="font-size:0.78rem;color:var(--muted)">Xidmət haqqı (7%)</span>
+        <span id="cart-service-fee-val" style="font-size:0.85rem;font-weight:600;color:var(--muted)">0.00 ₼</span>
+      </div>
+      <div class="cart-total-row">
+        <span class="cart-total-label" id="cart-total-label">Cəmi</span>
+        <span class="cart-total-val" id="cart-total">0.00 ₼</span>
+      </div>
+      <button class="btn-clear-cart" onclick="confirmClearCart()">Səbəti təmizlə</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-box" id="modal-box">
+    <div class="modal-drag"></div>
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    <div class="modal-icon-wrap" id="modal-icon-wrap"></div>
+    <div class="modal-body">
+      <div class="modal-top">
+        <div class="modal-name" id="modal-name"></div>
+        <div class="modal-price" id="modal-price"></div>
+      </div>
+      <div id="modal-ingredients-wrap" style="margin-bottom:1.2rem;display:none">
+        <div style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px" id="modal-ingredients-label">Tərkib</div>
+        <div class="modal-desc" id="modal-desc" style="margin-bottom:0"></div>
+      </div>
+      <div class="modal-tags" id="modal-tags"></div>
+      <div class="modal-qty-row">
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="changeModalQty(-1)">−</button>
+          <span class="qty-num" id="modal-qty">1</span>
+          <button class="qty-btn" onclick="changeModalQty(1)">+</button>
+        </div>
+        <button class="btn-add-cart" onclick="addToCartFromModal()">
+          <span>🛒</span> <span id="add-cart-btn-text">Səbətə əlavə et</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── localStorage-dan data oxu (admin.html ilə sinxron) ──
+// ── FLASK API ──
+
+// ── EMBEDDED DATA (JSONBin əlçatmaz olduqda fallback) ──
+const EMBEDDED_DATA = {"cafe":{"nameAz":"Üçbucaq Restoran","nameEn":"Üçbucaq Restoran","addrAz":"Bakı, Nizami küçəsi 42","addrEn":"42 Nizami Street, Baku","phone":"+994 50 000 00 00","icon":"☕"},"categories":[{"id":"coffee","labelAz":"Qəhvə","labelEn":"Coffee","bg":"#FFF3E0"},{"id":"tea","labelAz":"Çay","labelEn":"Tea","bg":"#E8F5E9"},{"id":"food","labelAz":"Yemək","labelEn":"Food","bg":"#FFF8E1"},{"id":"dessert","labelAz":"Desert","labelEn":"Desserts","bg":"#FCE4EC"}],"items":[{"catId":"coffee","nameAz":"Espresso","nameEn":"Espresso","descAz":"Klassik italyan espressosu","descEn":"Classic Italian espresso","detailsAz":"Tam qovrulmuş ərəb qəhvə dənlərindən hazırlanmış sıx espresso.","detailsEn":"Rich espresso from roasted arabica beans.","price":"3.00","badge":"null","icon":"☕","image":null,"tags":"30ml, Şəkərsiz, Vegan"},{"catId":"coffee","nameAz":"Kapuçino","nameEn":"Cappuccino","descAz":"Espresso + süd köpüyü","descEn":"Espresso + milk foam","detailsAz":"İki qat espresso üzərinə süd köpüyü.","detailsEn":"Double espresso with milk foam.","price":"4.50","badge":"hot","icon":"🥛","image":null,"tags":"180ml, Süd ilə, İsti"},{"catId":"coffee","nameAz":"Soyuq Latte","nameEn":"Iced Latte","descAz":"Buzlu süd + espresso","descEn":"Iced milk + espresso","detailsAz":"Espresso üzərinə soyuq süd, buz ilə servis edilir.","detailsEn":"Espresso over cold milk and ice.","price":"5.50","badge":"new","icon":"🧋","image":null,"tags":"350ml, Buzlu, Yeni"},{"catId":"coffee","nameAz":"Türk Qəhvəsi","nameEn":"Turkish Coffee","descAz":"Ənənəvi üsulda","descEn":"Traditionally brewed","detailsAz":"Cəzvedə hazırlanan ənənəvi türk qəhvəsi.","detailsEn":"Traditional cezve-brewed coffee.","price":"3.50","badge":"null","icon":"☕","image":null,"tags":"60ml, Ənənəvi"},{"catId":"tea","nameAz":"Azərbaycan Çayı","nameEn":"Azerbaijani Tea","descAz":"Dəmli qırmızı çay","descEn":"Strong red tea","detailsAz":"Ənənəvi armudu stəkanda servis edilir.","detailsEn":"Served in a tulip glass.","price":"2.50","badge":"null","icon":"🍵","image":null,"tags":"200ml, Dəmli"},{"catId":"tea","nameAz":"Limonlu Çay","nameEn":"Lemon Tea","descAz":"Zəncəfil və bal ilə","descEn":"With ginger and honey","detailsAz":"Zəncəfil, bal və limon ilə dəmlənmiş çay.","detailsEn":"Brewed with ginger, honey and lemon.","price":"3.50","badge":"new","icon":"🍋","image":null,"tags":"250ml, Ballı"},{"catId":"food","nameAz":"Kruasan","nameEn":"Croissant","descAz":"Yağlı fransız kruasanı","descEn":"Buttery French croissant","detailsAz":"Hər gün təzə bişirilən qatlı kruasan.","detailsEn":"Freshly baked every day.","price":"4.00","badge":"null","icon":"🥐","image":null,"tags":"Təzə bişmiş, Vegetarian"},{"catId":"food","nameAz":"Vafli","nameEn":"Waffle","descAz":"Bal və qaymaq ilə","descEn":"With honey and cream","detailsAz":"Belçika üslubunda hazırlanmış isti vafli.","detailsEn":"Belgian-style waffle.","price":"7.00","badge":"hot","icon":"🧇","image":null,"tags":"İsti, Ballı"},{"catId":"dessert","nameAz":"Çizkeyk","nameEn":"Cheesecake","descAz":"New-York stili","descEn":"New York style","detailsAz":"Sıx, kremli, qərəfilli biskvit bazası üzərində.","detailsEn":"Dense and creamy NY cheesecake.","price":"6.50","badge":"hot","icon":"🍰","image":null,"tags":"New-York, Bestseller"},{"catId":"dessert","nameAz":"Tiramisu","nameEn":"Tiramisu","descAz":"Klassik italyan deserti","descEn":"Classic Italian dessert","detailsAz":"Maskarpone krem, espressoya batırılmış savoiardi.","detailsEn":"Mascarpone cream with espresso savoiardi.","price":"7.50","badge":"new","icon":"🍮","image":null,"tags":"Kafein var, Maskarpone"}]};
+
+function normalizeItems(data) {
+  if (data && data.items) {
+    data.items = data.items.map(item => ({
+      ...item,
+      price: String(item.price || '').replace(/₼/g,'').replace(/#8380;?/g,'').replace(/AZN/gi,'').replace(/[^\d.,]/g,'').trim()
+    }));
+  }
+  return data;
+}
+
+function loadFallbackState() {
+  // Yalnız server əlçatmaz olduqda istifadə edilir
+  try {
+    var u = (new URLSearchParams(window.location.search)).get('user') || 'default';
+    const saved = localStorage.getItem('cafe_data_' + u) || localStorage.getItem('cafe_data');
+    if (saved) return normalizeItems(JSON.parse(saved));
+  } catch(e) {}
+  return EMBEDDED_DATA;
+}
+
+let lang = 'az', activeCat = 'all', searchQuery = '';
+// STATE-i əvvəlcə fallback ilə başlat, API cavabı gəldikdə yenilənəcək
+let STATE = loadFallbackState();
+
+// Tema tətbiq et
+// Tema, font, layout, css — STATE-dən tətbiq et (localStorage fallback yoxdur)
+function applyThemeVars(v) {
+  try {
+    if (!v && STATE && STATE.theme && STATE.theme.vars) v = STATE.theme.vars;
+    if (!v) return;
+    const root = document.documentElement.style;
+    if (v.accent)      root.setProperty('--accent', v.accent);
+    if (v.accent2)     root.setProperty('--accent2', v.accent2 || v.accent);
+    if (v.bg)          root.setProperty('--bg', v.bg);
+    if (v.card)        root.setProperty('--card', v.card);
+    if (v.text)        root.setProperty('--text', v.text);
+    if (v.muted)       root.setProperty('--muted', v.muted);
+    if (v.border)      root.setProperty('--border', v.border);
+    if (v.headerText)  root.setProperty('--header-text', v.headerText);
+  } catch(e) {}
+}
+
+function applyFontVars(v) {
+  try {
+    if (!v && STATE && STATE.font) v = STATE.font;
+    if (!v) return;
+    if (v.body)    document.documentElement.style.setProperty('--font-body', v.body);
+    if (v.heading) document.documentElement.style.setProperty('--font-heading', v.heading);
+    const fontName = v.body.split(',')[0].replace(/'/g,'').trim();
+    const known = ['DM Sans','Playfair Display'];
+    if (!known.includes(fontName)) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=' + fontName.replace(/ /g,'+') + ':wght@400;500;600;700&display=swap';
+      document.head.appendChild(link);
+    }
+    document.body.style.fontFamily = v.body;
+    document.querySelectorAll('h1,h2,.section-title').forEach(el => { el.style.fontFamily = v.heading; });
+  } catch(e) {}
+}
+
+function applyLayoutVars(layout) {
+  try {
+    if (!layout && STATE && STATE.layout) layout = STATE.layout;
+    document.body.setAttribute('data-layout', layout || 'list');
+  } catch(e) {}
+}
+
+function applyCustomCss(css) {
+  try {
+    if (!css && STATE && STATE.customCss) css = STATE.customCss;
+    if (!css) return;
+    let styleEl = document.getElementById('custom-css-tag');
+    if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'custom-css-tag'; document.head.appendChild(styleEl); }
+    styleEl.textContent = css;
+  } catch(e) {}
+}
+
+// İlk yükləmədə STATE hələ boş ola bilər — API cavabından sonra tətbiq ediləcək
+applyLayoutVars();
+
+function cleanPrice(p) {
+  return String(p || '').replace(/₼/g,'').replace(/#8380;?/g,'').replace(/AZN/gi,'').replace(/[^\d.,]/g,'').trim();
+}
+function getCats() {
+  if (!STATE) return [];
+  return STATE.categories || [];
+}
+function getItems(catId) {
+  if (!STATE) return [];
+  const items = (STATE.items || [])
+    .filter(i => !i.inactive)
+    .map(i => ({...i, price: cleanPrice(i.price)}));
+  return catId === 'all' ? items : items.filter(i => i.catId === catId);
+}
+function getCafe() {
+  if (!STATE) return { nameAz:'Üçbucaq Restoran', nameEn:'Üçbucaq Restoran', addrAz:'', addrEn:'', phone:'', icon:'☕' };
+  return STATE.cafe || {};
+}
+
+function trackClick(item) {
+  var key = item.nameAz || item.nameEn || 'unknown';
+  fetch('/api/stats', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({type:'click', item: key, user: MENU_USER})}).catch(()=>{});
+}
+
+function trackMenuOpen() {
+  fetch('/api/stats', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({type:'open', user: MENU_USER})}).catch(()=>{});
+}
+
+function trackCatClick(catId) {
+  fetch('/api/stats', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({type:'cat', cat: catId, user: MENU_USER})}).catch(()=>{});
+}
+
+function openModal(item) {
+  trackClick(item);
+  modalItem = item;
+  modalQty = 1;
+  document.getElementById('modal-qty').textContent = 1;
+  const iAz = lang === 'az';
+  document.getElementById('add-cart-btn-text').textContent = iAz ? 'Səbətə əlavə et' : 'Add to cart';
+  const cat = getCats().find(c => c.id === item.catId) || {};
+  const bg = cat.bg || '#FFF3E0';
+  const overlay = document.getElementById('modal-overlay');
+  const iconWrap = document.getElementById('modal-icon-wrap');
+  iconWrap.style.background = bg;
+  const _img = item.image || item.img || '';
+  if (_img) {
+    iconWrap.innerHTML = `<img src="${_img}" style="width:100%;height:100%;object-fit:cover;border-radius:16px">`;
+  } else {
+    iconWrap.textContent = (item.icon && item.icon !== 'undefined') ? item.icon : '🍽️';
+  }
+  document.getElementById('modal-name').textContent = lang === 'az' ? item.nameAz : (item.nameEn || item.nameAz);
+  document.getElementById('modal-price').textContent = item.price + ' ₼';
+  // Tərkib
+  const ingredWrap = document.getElementById('modal-ingredients-wrap');
+  const ingredEl = document.getElementById('modal-desc');
+  const ingredLabel = document.getElementById('modal-ingredients-label');
+  const descText = (item.ingredients || '').trim();
+  if (descText) {
+    ingredEl.textContent = descText;
+    ingredLabel.textContent = lang === 'az' ? 'Tərkib' : 'Ingredients';
+    ingredWrap.style.display = '';
+  } else {
+    ingredWrap.style.display = 'none';
+  }
+  const tagsEl = document.getElementById('modal-tags');
+  tagsEl.innerHTML = '';
+  if (item.badge && item.badge !== 'null') {
+    const label = item.badge === 'new'
+      ? (lang === 'az' ? 'Yeni məhsul' : 'New item')
+      : (lang === 'az' ? 'Məşhur seçim' : 'Popular choice');
+    const span = document.createElement('span');
+    span.className = 'modal-tag';
+    span.style.background = item.badge === 'new' ? '#eaf3de' : '#FAECE7';
+    span.style.color = item.badge === 'new' ? '#3B6D11' : '#993C1D';
+    span.textContent = label;
+    tagsEl.appendChild(span);
+  }
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalDirect(); });
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b =>
+    b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  const inp = document.getElementById('menu-search');
+  if (inp) inp.placeholder = l === 'az' ? 'Axtar...' : 'Search...';
+  const emptyEl = document.getElementById('search-empty');
+  if (emptyEl) emptyEl.innerHTML = '<span>🍽️</span>' + (l === 'az' ? 'Heç nə tapılmadı' : 'Nothing found');
+  const ingredLabel = document.getElementById('modal-ingredients-label');
+  if (ingredLabel) ingredLabel.textContent = l === 'az' ? 'Tərkib' : 'Ingredients';
+  if (searchQuery) renderSearch(); else render();
+  renderServiceFeeBanner();
+  updateCartUI();
+}
+
+function render() {
+  const cafe = getCafe();
+  const cats = getCats();
+
+  // Header
+  const cafeName = lang === 'az' ? cafe.nameAz : (cafe.nameEn || cafe.nameAz);
+  document.querySelector('.header h1').textContent = cafeName;
+  document.title = cafeName + ' — Menu';
+  document.getElementById('cafe-sub').textContent =
+    lang === 'az' ? cafe.addrAz : (cafe.addrEn || cafe.addrAz);
+
+  // Loqo
+  loadLogo();
+  const footerEl = document.getElementById('footer-note');
+  if (cafe.phone && cafe.phone.trim()) {
+    footerEl.style.display = '';
+    footerEl.innerHTML = lang === 'az'
+      ? `Zəng etmək üçün: <strong>${cafe.phone}</strong>`
+      : `Call us: <strong>${cafe.phone}</strong>`;
+  } else {
+    footerEl.style.display = 'none';
+  }
+
+  // Social bar
+  const socialBar = document.getElementById('social-bar');
+  socialBar.innerHTML = '';
+  const iconBtn = 'display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;text-decoration:none;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.3);color:#fff;background:rgba(255,255,255,0.15);transition:background 0.2s';
+  const igSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`;
+  const ttSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.27 8.27 0 0 0 4.84 1.56V6.81a4.85 4.85 0 0 1-1.07-.12z"/></svg>`;
+  const mapSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
+
+  if (cafe.instagram) {
+    socialBar.innerHTML += `<a href="https://instagram.com/${cafe.instagram}" target="_blank" style="${iconBtn}" title="Instagram">${igSVG}</a>`;
+  }
+  if (cafe.tiktok) {
+    socialBar.innerHTML += `<a href="https://tiktok.com/@${cafe.tiktok}" target="_blank" style="${iconBtn}" title="TikTok">${ttSVG}</a>`;
+  }
+  if (cafe.maps) {
+    socialBar.innerHTML += `<a href="${cafe.maps}" target="_blank" style="${iconBtn}" title="${lang==='az'?'Xəritə':'Map'}">${mapSVG}</a>`;
+  }
+
+  // Hours badge
+  renderHoursBadge(cafe);
+
+  // Category bar
+  const bar = document.getElementById('cat-bar');
+  bar.innerHTML = '';
+  const allLabel = lang === 'az' ? 'Hamısı' : 'All';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'cat-btn' + (activeCat === 'all' ? ' active' : '');
+  allBtn.textContent = allLabel;
+  allBtn.onclick = () => { activeCat = 'all'; clearSearch(); };
+  bar.appendChild(allBtn);
+
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn' + (activeCat === cat.id ? ' active' : '');
+    const catLabel = lang === 'az' ? cat.labelAz : (cat.labelEn || cat.labelAz);
+    if (cat.image) {
+      btn.innerHTML = `<img src="${cat.image}" style="width:16px;height:16px;border-radius:3px;object-fit:cover;margin-right:5px;vertical-align:middle">${catLabel}`;
+    } else if (cat.icon) {
+      btn.innerHTML = `<span style="margin-right:4px">${cat.icon}</span>${catLabel}`;
+    } else {
+      btn.textContent = catLabel;
+    }
+    btn.onclick = () => { activeCat = cat.id; trackCatClick(cat.id); clearSearch(); };
+    bar.appendChild(btn);
+  });
+
+  // Menu sections
+  const sec = document.getElementById('menu-sections');
+  sec.innerHTML = '';
+  const visibleCats = cats.filter(c => activeCat === 'all' || activeCat === c.id);
+
+  visibleCats.forEach(cat => {
+    const items = getItems(cat.id);
+    if (!items.length) return;
+    const wrap = document.createElement('div');
+    const catLabel = lang === 'az' ? cat.labelAz : (cat.labelEn || cat.labelAz);
+    wrap.innerHTML = `<div class="section-title">${catLabel}</div>`;
+    items.forEach((item, i) => {
+      const badgeVal = item.badge && item.badge !== 'null' ? item.badge : null;
+      const badge = badgeVal === 'new'
+        ? `<span class="badge badge-new">${lang==='az'?'Yeni':'New'}</span>`
+        : badgeVal === 'hot'
+        ? `<span class="badge badge-hot">${lang==='az'?'Məşhur':'Popular'}</span>`
+        : '';
+      const name = lang === 'az' ? item.nameAz : (item.nameEn || item.nameAz);
+      const desc = item.ingredients || '';
+      const _itemImg1 = item.image || item.img || '';
+      const iconHtml = _itemImg1
+        ? `<img src="${_itemImg1}" style="width:50px;height:50px;border-radius:12px;object-fit:cover;flex-shrink:0">`
+        : `<div class="item-icon" style="background:${cat.bg}">${(item.icon && item.icon !== 'undefined') ? item.icon : '🍽️'}</div>`;
+      const card = document.createElement('div');
+      card.className = 'item-card';
+      card.style.animationDelay = (i * 0.05) + 's';
+      card.onclick = () => openModal(item);
+      card.innerHTML = `
+        ${iconHtml}
+        <div class="item-info">
+          <div class="item-name">${name} ${badge}</div>
+          <div class="item-desc">${desc}</div>
+        </div>
+        <div class="item-price">${item.price} ₼</div>`;
+      wrap.appendChild(card);
+    });
+    sec.appendChild(wrap);
+  });
+
+  if (!STATE) {
+    sec.innerHTML = '<p style="text-align:center;color:var(--muted);padding:2rem">Menyu məlumatı tapılmadı</p>';
+  } else if (sec.innerHTML === '') {
+    const iAz = lang === 'az';
+    sec.innerHTML = `<div style="text-align:center;padding:3rem 1rem;color:var(--muted)"><div style="font-size:2.5rem;margin-bottom:0.75rem">🍽️</div><div style="font-size:0.9rem">${iAz ? 'Bu kateqoriyada məhsul yoxdur' : 'No items in this category'}</div></div>`;
+  }
+}
+
+// ── SEARCH ──
+function onSearch(val) {
+  searchQuery = val.trim().toLowerCase();
+  const clearBtn = document.getElementById('search-clear');
+  if (clearBtn) clearBtn.classList.toggle('visible', searchQuery.length > 0);
+  renderSearch();
+}
+
+function clearSearch() {
+  searchQuery = '';
+  const inp = document.getElementById('menu-search');
+  if (inp) inp.value = '';
+  const clearBtn = document.getElementById('search-clear');
+  if (clearBtn) clearBtn.classList.remove('visible');
+  renderSearch();
+}
+
+function renderSearch() {
+  const sec = document.getElementById('menu-sections');
+  const emptyEl = document.getElementById('search-empty');
+  if (!searchQuery) {
+    // Show normal render
+    if (emptyEl) emptyEl.style.display = 'none';
+    render();
+    return;
+  }
+
+  const cats = getCats();
+  const allItems = getItems('all');
+  const matched = allItems.filter(item => {
+    const name = ((item.nameAz || '') + ' ' + (item.nameEn || '')).toLowerCase();
+    const ingredients = (item.ingredients || '').toLowerCase();
+    return name.includes(searchQuery) || ingredients.includes(searchQuery);
+  });
+
+  sec.innerHTML = '';
+  if (!matched.length) {
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  // Group by category
+  cats.forEach(cat => {
+    const catItems = matched.filter(i => i.catId === cat.id);
+    if (!catItems.length) return;
+    const wrap = document.createElement('div');
+    const catLabel = lang === 'az' ? cat.labelAz : (cat.labelEn || cat.labelAz);
+    wrap.innerHTML = `<div class="section-title">${catLabel}</div>`;
+    catItems.forEach((item, i) => {
+      const badgeVal = item.badge && item.badge !== 'null' ? item.badge : null;
+      const badge = badgeVal === 'new'
+        ? `<span class="badge badge-new">${lang==='az'?'Yeni':'New'}</span>`
+        : badgeVal === 'hot'
+        ? `<span class="badge badge-hot">${lang==='az'?'Məşhur':'Popular'}</span>`
+        : '';
+      const name = lang === 'az' ? item.nameAz : (item.nameEn || item.nameAz);
+      const desc = item.ingredients || '';
+
+      // Highlight matched text
+      const hlName = highlight(name, searchQuery);
+      const hlDesc = highlight(desc, searchQuery);
+
+      const _itemImg2 = item.image || item.img || '';
+      const iconHtml = _itemImg2
+        ? `<img src="${_itemImg2}" style="width:50px;height:50px;border-radius:12px;object-fit:cover;flex-shrink:0">`
+        : `<div class="item-icon" style="background:${cat.bg}">${(item.icon && item.icon !== 'undefined') ? item.icon : '🍽️'}</div>`;
+      const card = document.createElement('div');
+      card.className = 'item-card';
+      card.style.animationDelay = (i * 0.04) + 's';
+      card.onclick = () => openModal(item);
+      card.innerHTML = `${iconHtml}
+        <div class="item-info">
+          <div class="item-name">${hlName} ${badge}</div>
+          <div class="item-desc">${hlDesc}</div>
+        </div>
+        <div class="item-price">${item.price} &#8380;</div>`;
+      wrap.appendChild(card);
+    });
+    sec.appendChild(wrap);
+  });
+}
+
+function highlight(text, query) {
+  if (!query || !text) return text || '';
+  const idx = text.toLowerCase().indexOf(query);
+  if (idx === -1) return text;
+  return text.slice(0, idx) +
+    '<mark style="background:rgba(232,98,42,0.2);color:var(--accent);border-radius:3px;padding:0 2px">' +
+    text.slice(idx, idx + query.length) +
+    '</mark>' +
+    text.slice(idx + query.length);
+}
+
+function renderServiceFeeBanner() {
+  var banner = document.getElementById('service-fee-banner');
+  var text   = document.getElementById('service-fee-text');
+  if (!banner || !text) return;
+  var fee = STATE && STATE.cafe && STATE.cafe.serviceFee;
+  fee = parseFloat(fee);
+  if (!fee || fee <= 0) { banner.style.display = 'none'; return; }
+  var isAz = lang === 'az';
+  text.innerHTML = isAz
+    ? ('&#128712; Qiymətlərə <strong style="color:var(--accent)">' + fee + '% xidmət haqqı</strong> daxildir')
+    : ('&#128712; Prices include <strong style="color:var(--accent)">' + fee + '% service charge</strong>');
+  banner.style.display = 'block';
+}
+
+function loadLogo() {
+  const url = (STATE.cafe && STATE.cafe.logo) ? STATE.cafe.logo : localStorage.getItem('cafe_logo');
+  const wrap = document.getElementById('logo-wrap');
+  if (!wrap) return;
+  if (url) {
+    wrap.innerHTML = '<img src="' + url + '" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:18px">';
+  } else {
+    wrap.innerHTML = '<div class="header-logo-placeholder"><span>🏪</span></div>';
+  }
+}
+
+// URL-dən ?user= parametrini oxu (məs: /menu?user=ali)
+var MENU_USER = (function() {
+  var p = new URLSearchParams(window.location.search);
+  return p.get('user') || '';
+})();
+
+// Flask API-dən data yüklə — server yoxdursa localStorage ilə davam et
+var dataUrl = MENU_USER ? '/api/data?user=' + encodeURIComponent(MENU_USER) : '/api/data';
+fetch(dataUrl)
+  .then(r => { if (!r.ok) throw new Error('no server'); return r.json(); })
+  .then(data => {
+    if (data && (data.items !== undefined || data.categories)) {
+      STATE = normalizeItems(data);
+      try { localStorage.setItem('cafe_data_' + (MENU_USER || 'default'), JSON.stringify(STATE)); } catch(e) {}
+    }
+    if (STATE.theme && STATE.theme.vars) applyThemeVars();
+    if (STATE.font) applyFontVars();
+    if (STATE.layout) applyLayoutVars();
+    if (STATE.customCss) applyCustomCss();
+    render();
+    loadLogo();
+    renderServiceFeeBanner();
+    trackMenuOpen();
+  })
+  .catch(() => {
+    // Server yoxdur — localStorage-dakı data ilə işlə, xəta göstərmə
+    render();
+    loadLogo();
+    renderServiceFeeBanner();
+    trackMenuOpen();
+  });
+
+// ── HOURS BADGE ──
+const DAYS_AZ = ['Bazar ertəsi','Çərşənbə axşamı','Çərşənbə','Cümə axşamı','Cümə','Şənbə','Bazar'];
+const DAYS_EN = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+function renderHoursBadge(cafe) {
+  const wrap = document.getElementById('hours-badge');
+  if (!wrap) return;
+  const hours = cafe && cafe.hours;
+  if (!hours || !hours.length) { wrap.style.display = 'none'; return; }
+
+  const now = new Date();
+  const jsDay = now.getDay();
+  const idx = jsDay === 0 ? 6 : jsDay - 1;
+  const h = hours[idx];
+  const isAz = lang === 'az';
+
+  function toMin(t) {
+    if (!t) return 0;
+    const p = t.split(':');
+    return parseInt(p[0]) * 60 + parseInt(p[1]);
+  }
+  const curMin = now.getHours() * 60 + now.getMinutes();
+  const isOpen = !h.closed && curMin >= toMin(h.open) && curMin < toMin(h.close);
+
+  const statusText = h.closed
+    ? (isAz ? 'Bugün bağlıdır' : 'Closed today')
+    : isOpen
+      ? (isAz ? `Açıqdır · ${h.close}-ə kimi` : `Open · Until ${h.close}`)
+      : (isAz ? `Bağlıdır · ${h.open}-dən açılır` : `Closed · Opens at ${h.open}`);
+
+  wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <button class="hours-badge" id="hours-badge-btn" onclick="toggleHoursPopup(event)">
+      <span class="hours-dot ${isOpen ? 'open' : 'closed-dot'}"></span>
+      <span>${statusText}</span>
+      <span style="font-size:0.7rem;opacity:0.6">▾</span>
+    </button>`;
+
+  // Remove old popup if exists
+  const old = document.getElementById('hours-popup');
+  if (old) old.remove();
+
+  // Build popup at body level
+  const popup = document.createElement('div');
+  popup.className = 'hours-popup';
+  popup.id = 'hours-popup';
+  popup.innerHTML = hours.map((d, i) => {
+    const isToday = i === idx;
+    const dayName = isAz ? DAYS_AZ[i] : DAYS_EN[i];
+    const timeStr = d.closed
+      ? `<span class="day-closed">${isAz ? 'Bağlı' : 'Closed'}</span>`
+      : `<span class="day-time">${d.open} – ${d.close}</span>`;
+    return `<div class="hours-popup-row${isToday ? ' today' : ''}">
+      <span class="day-name">${isToday ? '▶ ' : ''}${dayName}</span>${timeStr}
+    </div>`;
+  }).join('');
+  document.body.appendChild(popup);
+}
+
+function toggleHoursPopup(e) {
+  e.stopPropagation();
+  const popup = document.getElementById('hours-popup');
+  const btn = document.getElementById('hours-badge-btn');
+  if (!popup || !btn) return;
+  const isVisible = popup.classList.contains('visible');
+  if (isVisible) {
+    popup.classList.remove('visible');
+    return;
+  }
+  // Position popup under badge button
+  const rect = btn.getBoundingClientRect();
+  popup.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+  popup.style.left = Math.max(8, rect.left + rect.width / 2 - 115) + 'px';
+  popup.classList.add('visible');
+}
+document.addEventListener('click', function() {
+  const popup = document.getElementById('hours-popup');
+  if (popup) popup.classList.remove('visible');
+});
+
+// ── CART ──
+let cart = []; // [{item, qty}]
+let modalItem = null;
+let modalQty = 1;
+
+function changeModalQty(d) {
+  modalQty = Math.max(1, modalQty + d);
+  document.getElementById('modal-qty').textContent = modalQty;
+}
+
+function addToCartFromModal() {
+  if (!modalItem) return;
+  const key = modalItem.nameAz || modalItem.nameEn;
+  const existing = cart.find(r => (r.item.nameAz || r.item.nameEn) === key);
+  if (existing) {
+    existing.qty += modalQty;
+  } else {
+    cart.push({ item: modalItem, qty: modalQty });
+  }
+  updateCartUI();
+  closeModalDirect();
+  // Brief feedback animation on FAB
+  const fab = document.getElementById('cart-fab');
+  fab.style.transform = 'scale(1.15)';
+  setTimeout(() => { fab.style.transform = ''; }, 200);
+}
+
+function updateCartUI() {
+  const subtotal = cart.reduce((s, r) => s + parseFloat(r.item.price || 0) * r.qty, 0);
+  const count = cart.reduce((s, r) => s + r.qty, 0);
+  const fab = document.getElementById('cart-fab');
+  const iAz = lang === 'az';
+
+  // Xidmət haqqı
+  const fee = parseFloat((STATE && STATE.cafe && STATE.cafe.serviceFee) || 0);
+  const feeRow = document.getElementById('cart-service-fee-row');
+  const feeLabel = document.getElementById('cart-service-fee-label');
+  const feeVal = document.getElementById('cart-service-fee-val');
+  let grandTotal = subtotal;
+  if (fee > 0 && count > 0 && feeRow) {
+    const feeAmt = subtotal * fee / 100;
+    grandTotal = subtotal + feeAmt;
+    feeRow.style.display = 'flex';
+    feeLabel.textContent = (iAz ? 'Xidmət haqqı' : 'Service charge') + ' (' + fee + '%)';
+    feeVal.textContent = feeAmt.toFixed(2) + ' ₼';
+  } else if (feeRow) {
+    feeRow.style.display = 'none';
+  }
+
+  document.getElementById('cart-fab-count').textContent = count;
+  document.getElementById('cart-total').textContent = grandTotal.toFixed(2) + ' ₼';
+  if (count > 0) fab.classList.add('visible');
+  else fab.classList.remove('visible');
+
+  document.getElementById('cart-title').textContent = '🛒 ' + (iAz ? 'Səbət' : 'Cart');
+  document.getElementById('cart-fab-label').textContent = iAz ? 'Səbət' : 'Cart';
+  document.getElementById('cart-total-label').textContent = iAz ? 'Cəmi' : 'Total';
+  document.getElementById('add-cart-btn-text').textContent = iAz ? 'Səbətə əlavə et' : 'Add to cart';
+  renderCartItems();
+}
+
+function renderCartItems() {
+  const list = document.getElementById('cart-items-list');
+  if (!list) return;
+  if (cart.length === 0) {
+    const iAz = lang === 'az';
+    list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.9rem">' + (iAz ? '🛒 Səbət boşdur' : '🛒 Cart is empty') + '</div>';
+    return;
+  }
+  list.innerHTML = '';
+  cart.forEach((row, idx) => {
+    const item = row.item;
+    const cat = (STATE && STATE.categories || []).find(c => c.id === item.catId) || {};
+    const img = item.image || item.img || '';
+    const iconHtml = img
+      ? `<div class="cart-item-icon"><img src="${img}" alt=""></div>`
+      : `<div class="cart-item-icon" style="background:${cat.bg||'#FFF3E0'}">${(item.icon && item.icon !== 'undefined') ? item.icon : '🍽️'}</div>`;
+    const name = lang === 'az' ? item.nameAz : (item.nameEn || item.nameAz);
+    const linePrice = (parseFloat(item.price || 0) * row.qty).toFixed(2);
+    const div = document.createElement('div');
+    div.className = 'cart-row';
+    div.innerHTML = `${iconHtml}
+      <div class="cart-item-name">${name}</div>
+      <div class="cart-qty-ctrl">
+        <button class="cart-qty-btn" onclick="changeCartQty(${idx},-1)">−</button>
+        <span class="cart-qty-num">${row.qty}</span>
+        <button class="cart-qty-btn" onclick="changeCartQty(${idx},1)">+</button>
+      </div>
+      <div class="cart-item-price">${linePrice} ₼</div>`;
+    list.appendChild(div);
+  });
+}
+
+function changeCartQty(idx, d) {
+  cart[idx].qty += d;
+  if (cart[idx].qty <= 0) cart.splice(idx, 1);
+  updateCartUI();
+}
+
+function confirmClearCart() {
+  const iAz = lang === 'az';
+  if (confirm(iAz ? 'Səbəti təmizləmək istədiyinizdən əminsinizmi?' : 'Are you sure you want to clear the cart?')) {
+    clearCart();
+  }
+}
+
+function clearCart() {
+  cart = [];
+  updateCartUI();
+  closeCart();
+}
+
+function openCart() {
+  updateCartUI();
+  document.getElementById('cart-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCart() {
+  document.getElementById('cart-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function cartOverlayClick(e) {
+  if (e.target === document.getElementById('cart-overlay')) closeCart();
+}
+
+
+
+
+(function() {
+  const el = document.querySelector('.cats-wrap');
+  if (!el) return;
+  let isDown = false, startX, scrollLeft;
+  el.addEventListener('mousedown', function(e) {
+    isDown = true; el.classList.add('dragging');
+    startX = e.pageX - el.offsetLeft;
+    scrollLeft = el.scrollLeft;
+  });
+  el.addEventListener('mouseleave', function() { isDown = false; el.classList.remove('dragging'); });
+  el.addEventListener('mouseup', function() { isDown = false; el.classList.remove('dragging'); });
+  el.addEventListener('mousemove', function(e) {
+    if (!isDown) return;
+    e.preventDefault();
+    var x = e.pageX - el.offsetLeft;
+    el.scrollLeft = scrollLeft - (x - startX);
+  });
+})();
+</script>
+</body>
+</html>
