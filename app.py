@@ -9,6 +9,8 @@ from PIL import Image
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import copy
+import cloudinary
+import cloudinary.uploader
 
 app = Flask(__name__, template_folder='.')
 app.secret_key = os.environ.get('SECRET_KEY', 'ucbucaq-restoran-secret-2025')
@@ -29,11 +31,16 @@ APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://ucbucaq-menu-production.u
 
 mail = Mail(app)
 
+# ── CLOUDINARY KONFİQURASİYASI ──
+cloudinary.config(
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME', 'dynkpyjtk'),
+    api_key=os.environ.get('CLOUDINARY_API_KEY', '251682489535234'),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET', '0Sfecx4n8rDtD1Go1DJax19Ji2k')
+)
+
 # ── QOVLUQLAR ──
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = os.path.join(BASE_DIR, 'static', 'uploads')
 ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # ── DATABASE ──
 DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://neondb_owner:npg_Y5ZWglOcE4Td@ep-morning-shape-ap6unzjp.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require')
@@ -163,33 +170,17 @@ def save_user_data(username, data):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
 
-def resize_and_save(file_obj, save_path, max_size=(1200, 1200), quality=82):
-    img = Image.open(file_obj)
-    try:
-        from PIL.ExifTags import TAGS
-        exif = img._getexif()
-        if exif:
-            for tag, val in exif.items():
-                if TAGS.get(tag) == 'Orientation':
-                    rotations = {3: 180, 6: 270, 8: 90}
-                    if val in rotations:
-                        img = img.rotate(rotations[val], expand=True)
-                    break
-    except Exception:
-        pass
-    img.thumbnail(max_size, Image.LANCZOS)
-    ext = os.path.splitext(save_path)[1].lower()
-    if ext == '.gif':
-        img.save(save_path)
-        return
-    if img.mode in ('RGBA', 'LA', 'P'):
-        img = img.convert('RGBA')
-        img.save(save_path.rsplit('.', 1)[0] + '.png', 'PNG', optimize=True)
-        return
-    if img.mode != 'RGB':
-        img = img.convert('RGB')
-    fmt = 'WEBP' if ext == '.webp' else 'JPEG'
-    img.save(save_path, fmt, quality=quality, optimize=True)
+def upload_to_cloudinary(file_obj, folder='qr-menu', public_id=None, max_width=1200):
+    options = {
+        'folder': folder,
+        'resource_type': 'image',
+        'transformation': [{'width': max_width, 'crop': 'limit', 'quality': 'auto'}]
+    }
+    if public_id:
+        options['public_id'] = public_id
+        options['overwrite'] = True
+    result = cloudinary.uploader.upload(file_obj, **options)
+    return result['secure_url']
 
 def current_user():
     return session.get('user')
@@ -276,7 +267,7 @@ def api_save_data():
     save_user_data(username, db)
     return jsonify({'ok': True})
 
-# ── ŞƏKIL YÜKLƏMƏ ──
+# ── ŞƏKIL YÜKLƏMƏ (Cloudinary) ──
 @app.route('/api/upload', methods=['POST'])
 @login_required
 def api_upload():
@@ -287,16 +278,11 @@ def api_upload():
         return jsonify({'error': 'Fayl seçilmədi'}), 400
     if not allowed_file(file.filename):
         return jsonify({'error': 'Yalnız PNG, JPG, GIF, WEBP faylları qəbul edilir'}), 400
-    ext = file.filename.rsplit('.', 1)[1].lower()
-    filename = str(uuid.uuid4()) + '.' + ext
-    save_path = os.path.join(UPLOAD_DIR, filename)
     try:
-        resize_and_save(file, save_path, max_size=(1200, 1200), quality=82)
-    except Exception:
-        file.seek(0)
-        file.save(save_path)
-    url = '/static/uploads/' + filename
-    return jsonify({'ok': True, 'url': url})
+        url = upload_to_cloudinary(file, folder='qr-menu/items')
+        return jsonify({'ok': True, 'url': url})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/upload/logo', methods=['POST'])
 @login_required
@@ -306,20 +292,15 @@ def api_upload_logo():
     file = request.files['file']
     if not allowed_file(file.filename):
         return jsonify({'error': 'Yalnız şəkil faylları'}), 400
-    ext = file.filename.rsplit('.', 1)[1].lower()
     username = current_user()
-    filename = f'logo_{secure_filename(username)}.{ext}'
-    save_path = os.path.join(UPLOAD_DIR, filename)
     try:
-        resize_and_save(file, save_path, max_size=(400, 400), quality=85)
-    except Exception:
-        file.seek(0)
-        file.save(save_path)
-    url = '/static/uploads/' + filename + '?v=' + str(int(datetime.now().timestamp()))
-    db = load_user_data(username)
-    db['cafe']['logo'] = url
-    save_user_data(username, db)
-    return jsonify({'ok': True, 'url': url})
+        url = upload_to_cloudinary(file, folder='qr-menu/logos', public_id=f'logo_{username}', max_width=400)
+        db = load_user_data(username)
+        db['cafe']['logo'] = url
+        save_user_data(username, db)
+        return jsonify({'ok': True, 'url': url})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # ── İSTİFADƏÇİ İDARƏETMƏSİ ──
 @app.route('/api/users', methods=['GET'])
