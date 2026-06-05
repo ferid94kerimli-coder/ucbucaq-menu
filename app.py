@@ -8,7 +8,7 @@ from flask_mail import Mail, Message
 from PIL import Image
 import io
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='.')
 app.secret_key = os.environ.get('SECRET_KEY', 'ucbucaq-restoran-secret-2025')
 
 # ── EMAIL KONFİQURASİYASI ──
