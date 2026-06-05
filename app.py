@@ -14,7 +14,7 @@ from psycopg2.extras import RealDictCursor
 import cloudinary
 import cloudinary.uploader
 
-app = Flask(__name__, template_folder='.')
+app = Flask(__name__, template_folder='templates')
 
 _secret_key = os.environ.get('SECRET_KEY')
 if not _secret_key:
@@ -162,6 +162,8 @@ def init_db():
                 used     BOOLEAN NOT NULL DEFAULT FALSE
             )
         """)
+        # Vaxtı keçmiş və ya istifadə edilmiş tokenləri təmizlə
+        cur.execute("DELETE FROM reset_tokens WHERE used = TRUE OR expires < NOW()")
 
         cur.execute("SELECT 1 FROM users WHERE username = 'admin'")
         if not cur.fetchone():
@@ -420,7 +422,8 @@ def api_upload():
         return jsonify({'error': 'Yalnız PNG, JPG, GIF, WEBP faylları qəbul edilir'}), 400
 
     try:
-        public_id = f"ucbucaq/items/{uuid.uuid4()}"
+        username = current_user()
+        public_id = f"ucbucaq/{username}/items/{uuid.uuid4()}"
         url = upload_to_cloudinary(file, public_id=public_id)
         return jsonify({'ok': True, 'url': url})
     except Exception as e:
@@ -437,7 +440,7 @@ def api_upload_logo():
 
     username = current_user()
     try:
-        public_id = f"ucbucaq/logos/{secure_filename(username)}"
+        public_id = f"ucbucaq/{username}/logo"
         url = upload_to_cloudinary(file, public_id=public_id, max_size=(400, 400))
         with db_conn() as conn:
             cur = conn.cursor()
@@ -655,6 +658,7 @@ def api_forgot_password():
 
         with db_conn() as conn:
             cur = conn.cursor()
+            cur.execute("DELETE FROM reset_tokens WHERE used = TRUE OR expires < NOW()")
             cur.execute(
                 "INSERT INTO reset_tokens (token, username, expires, used) VALUES (%s,%s,%s,%s)",
                 (token, user['username'], expires, False)
