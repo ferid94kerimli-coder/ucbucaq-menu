@@ -422,8 +422,13 @@ def api_get_data():
     db = load_user_data(username)
     # Müştəri (public) sorğusu — statistikaları gizlət
     if requested_user and requested_user != logged_in:
-        return jsonify({k: db[k] for k in ('cafe', 'categories', 'items', 'theme') if k in db})
-    return jsonify(db)
+        data = {k: db[k] for k in ('cafe', 'categories', 'items', 'theme') if k in db}
+    else:
+        data = db
+    resp = make_response(jsonify(data))
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+    resp.headers['Pragma'] = 'no-cache'
+    return resp
 
 @app.route('/api/data', methods=['PUT'])
 @login_required
