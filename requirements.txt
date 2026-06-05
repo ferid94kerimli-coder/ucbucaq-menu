@@ -4,3 +4,4 @@ pillow
 werkzeug
 gunicorn
 psycopg2-binary
+cloudinary
