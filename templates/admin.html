@@ -992,7 +992,10 @@ async function saveData() {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(STATE)
       });
-      if (r.status === 402) {
+      if (r.status === 401) {
+        showToast(interfaceLang==='en'?'⚠️ Session expired — please login again':'⚠️ Sessiya bitib — yenidən daxil olun');
+        setTimeout(function(){ window.location.reload(); }, 2000);
+      } else if (r.status === 402) {
         showToast(interfaceLang==='en'?'❌ Subscription expired — changes not saved':'❌ Abunəlik bitib — dəyişikliklər saxlanılmadı');
         document.getElementById('sub-expired-modal').style.display = 'flex';
       } else if (r.ok) showToast(interfaceLang==='en'?'✅ Saved':'✅ Yadda saxlandı');
