@@ -2630,14 +2630,7 @@ function setInterfaceLang(lang) {
   showToast(lang==='az' ? 'Dil: Azərbaycan' : 'Language: English');
 }
 
-// Users — stored in localStorage
-function loadUsers() {
-  try {
-    var u = localStorage.getItem('cafe_users');
-    return u ? JSON.parse(u) : { admin:{pass:'admin123',role:'admin'}, manager:{pass:'cafe2024',role:'manager'} };
-  } catch(e) { return { admin:{pass:'admin123',role:'admin'}, manager:{pass:'cafe2024',role:'manager'} }; }
-}
-function saveUsers(users) { localStorage.setItem('cafe_users', JSON.stringify(users)); }
+// İstifadəçilər artıq PostgreSQL-dədir — /api/users endpoint istifadə olunur
 
 var editingUserKey = null;
 
