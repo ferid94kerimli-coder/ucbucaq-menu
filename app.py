@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from functools import wraps
-import json, os, uuid, secrets
+import json, os, uuid, secrets, time
 from datetime import datetime, timedelta
+from collections import defaultdict
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
@@ -13,7 +14,25 @@ import cloudinary
 import cloudinary.uploader
 
 app = Flask(__name__, template_folder='.')
-app.secret_key = os.environ.get('SECRET_KEY', 'ucbucaq-restoran-secret-2025')
+
+_secret_key = os.environ.get('SECRET_KEY')
+if not _secret_key:
+    raise RuntimeError("SECRET_KEY mühit dəyişəni təyin edilməlidir")
+app.secret_key = _secret_key
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+
+# ── LOGIN RATE LIMITING ──
+_login_attempts: dict = defaultdict(list)
+_LOGIN_MAX = 5
+_LOGIN_WINDOW = 300  # 5 dəqiqə
+
+def _check_login_rate(ip: str) -> bool:
+    now = time.time()
+    _login_attempts[ip] = [t for t in _login_attempts[ip] if now - t < _LOGIN_WINDOW]
+    if len(_login_attempts[ip]) >= _LOGIN_MAX:
+        return False
+    _login_attempts[ip].append(now)
+    return True
 
 # ── CLOUDINARY KONFİQURASİYASI ──
 cloudinary.config(
@@ -67,11 +86,16 @@ def init_db():
     # İstifadəçilər cədvəli
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            username    TEXT PRIMARY KEY,
-            password    TEXT NOT NULL,
-            role        TEXT NOT NULL DEFAULT 'manager',
-            email       TEXT DEFAULT ''
+            username             TEXT PRIMARY KEY,
+            password             TEXT NOT NULL,
+            role                 TEXT NOT NULL DEFAULT 'manager',
+            email                TEXT DEFAULT '',
+            must_change_password BOOLEAN NOT NULL DEFAULT FALSE
         )
+    """)
+    # Köhnə DB-lərdə sütun yoxdursa əlavə et
+    cur.execute("""
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE
     """)
 
     # Hər userin menyu datası
@@ -95,9 +119,15 @@ def init_db():
     # Default superadmin yarat (yoxdursa)
     cur.execute("SELECT 1 FROM users WHERE username = 'admin'")
     if not cur.fetchone():
+        _admin_pw = os.environ.get('ADMIN_PASSWORD')
+        _must_change = False
+        if not _admin_pw:
+            _admin_pw = secrets.token_urlsafe(14)
+            _must_change = True
+            print(f"[WARN] ADMIN_PASSWORD təyin edilməyib. İlk giriş şifrəsi: {_admin_pw}", flush=True)
         cur.execute(
-            "INSERT INTO users (username, password, role, email) VALUES (%s, %s, %s, %s)",
-            ('admin', generate_password_hash('admin123'), 'superadmin', '')
+            "INSERT INTO users (username, password, role, email, must_change_password) VALUES (%s, %s, %s, %s, %s)",
+            ('admin', generate_password_hash(_admin_pw), 'superadmin', '', _must_change)
         )
         cur.execute(
             "INSERT INTO user_data (username, data) VALUES (%s, %s)",
@@ -145,11 +175,16 @@ DEFAULT_MENU_DATA = {
 def load_users():
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT username, password, role, email FROM users")
+    cur.execute("SELECT username, password, role, email, must_change_password FROM users")
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    return {r['username']: {'password': r['password'], 'role': r['role'], 'email': r['email'] or ''} for r in rows}
+    return {r['username']: {
+        'password': r['password'],
+        'role': r['role'],
+        'email': r['email'] or '',
+        'must_change_password': r['must_change_password']
+    } for r in rows}
 
 def save_user(username, password_hash, role, email=''):
     conn = get_db()
@@ -307,15 +342,21 @@ def admin():
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
-    data = request.json
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if not _check_login_rate(ip):
+        return jsonify({'ok': False, 'error': 'Çox sayda uğursuz cəhd. 5 dəqiqə gözləyin.'}), 429
+
+    data = request.json or {}
     username = data.get('username', '').strip()
     password = data.get('password', '')
     users = load_users()
     if username in users and check_password_hash(users[username]['password'], password):
         role = users[username].get('role', 'manager')
+        must_change = users[username].get('must_change_password', False)
+        session.permanent = True
         session['user'] = username
         session['role'] = role
-        return jsonify({'ok': True, 'username': username, 'role': role})
+        return jsonify({'ok': True, 'username': username, 'role': role, 'must_change_password': must_change})
     return jsonify({'ok': False, 'error': 'İstifadəçi adı və ya şifrə yanlışdır'}), 401
 
 @app.route('/api/logout', methods=['POST'])
@@ -335,13 +376,18 @@ def api_me():
 
 @app.route('/api/data')
 def api_get_data():
-    username = request.args.get('user') or current_user()
+    requested_user = request.args.get('user')
+    logged_in = current_user()
+    username = requested_user or logged_in
     if not username:
         return jsonify({'error': 'İstifadəçi müəyyən edilmədi'}), 400
     users = load_users()
     if username not in users:
         return jsonify({'error': 'İstifadəçi tapılmadı'}), 404
     db = load_user_data(username)
+    # Başqasının datasına baxan (məs. müştəri) statistikaları görməsin
+    if requested_user and requested_user != logged_in:
+        return jsonify({k: db[k] for k in ('cafe', 'categories', 'items', 'theme') if k in db})
     return jsonify(db)
 
 @app.route('/api/data', methods=['PUT'])
@@ -472,7 +518,7 @@ def api_set_user_password(username):
         return jsonify({'error': 'Şifrə ən az 6 simvol olmalıdır'}), 400
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("UPDATE users SET password = %s WHERE username = %s",
+    cur.execute("UPDATE users SET password = %s, must_change_password = FALSE WHERE username = %s",
                 (generate_password_hash(password), username))
     conn.commit()
     cur.close()
@@ -513,6 +559,8 @@ def api_get_user_info(username):
 # STATİSTİKA
 # ────────────────────────────────────────────────────────────────
 
+_ALLOWED_STAT_TYPES = {'click', 'open', 'cat'}
+
 @app.route('/api/stats', methods=['POST'])
 def api_track_stats():
     data = request.json or {}
@@ -520,21 +568,60 @@ def api_track_stats():
     if not username:
         return jsonify({'ok': False, 'error': 'user tələb olunur'}), 400
 
-    db = load_user_data(username)
-    stats = db.setdefault('stats', {'clicks': {}, 'opens': {'total': 0, 'dates': {}}, 'cats': {}})
+    stat_type = data.get('type', '')
+    if stat_type not in _ALLOWED_STAT_TYPES:
+        return jsonify({'ok': False, 'error': 'Keçərsiz stat növü'}), 400
 
-    if data.get('type') == 'click':
-        key = data.get('item', '')
-        stats['clicks'][key] = stats['clicks'].get(key, 0) + 1
-    elif data.get('type') == 'open':
-        stats['opens']['total'] = stats['opens'].get('total', 0) + 1
-        today = datetime.now().strftime('%Y-%m-%d')
-        stats['opens']['dates'][today] = stats['opens']['dates'].get(today, 0) + 1
-    elif data.get('type') == 'cat':
-        key = data.get('cat', '')
-        stats['cats'][key] = stats['cats'].get(key, 0) + 1
+    # Key uzunluğunu məhdudlaşdır
+    item_key = str(data.get('item') or data.get('cat') or '')[:120]
 
-    save_user_data(username, db)
+    # İstifadəçi mövcuddursa icazə ver
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
+    exists = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not exists:
+        return jsonify({'ok': False, 'error': 'İstifadəçi tapılmadı'}), 404
+
+    # Statistikanı atomik şəkildə JSONB üzərindən yenilə
+    conn = get_db()
+    cur = conn.cursor()
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    if stat_type == 'open':
+        cur.execute("""
+            UPDATE user_data SET data = jsonb_set(
+                jsonb_set(
+                    data,
+                    '{stats,opens,total}',
+                    to_jsonb(COALESCE((data->'stats'->'opens'->>'total')::int, 0) + 1)
+                ),
+                ARRAY['stats','opens','dates',%s],
+                to_jsonb(COALESCE((data->'stats'->'opens'->'dates'->>%s)::int, 0) + 1)
+            ) WHERE username = %s
+        """, (today, today, username))
+    elif stat_type == 'click':
+        cur.execute("""
+            UPDATE user_data SET data = jsonb_set(
+                data,
+                ARRAY['stats','clicks',%s],
+                to_jsonb(COALESCE((data->'stats'->'clicks'->>%s)::int, 0) + 1)
+            ) WHERE username = %s
+        """, (item_key, item_key, username))
+    elif stat_type == 'cat':
+        cur.execute("""
+            UPDATE user_data SET data = jsonb_set(
+                data,
+                ARRAY['stats','cats',%s],
+                to_jsonb(COALESCE((data->'stats'->'cats'->>%s)::int, 0) + 1)
+            ) WHERE username = %s
+        """, (item_key, item_key, username))
+
+    conn.commit()
+    cur.close()
+    conn.close()
     return jsonify({'ok': True})
 
 @app.route('/api/stats')
@@ -662,7 +749,7 @@ def api_reset_password():
         cur.close(); conn.close()
         return jsonify({'error': 'Linkın vaxtı bitib'}), 400
 
-    cur.execute("UPDATE users SET password = %s WHERE username = %s",
+    cur.execute("UPDATE users SET password = %s, must_change_password = FALSE WHERE username = %s",
                 (generate_password_hash(new_password), td['username']))
     cur.execute("UPDATE reset_tokens SET used = TRUE WHERE token = %s", (token,))
     conn.commit()
