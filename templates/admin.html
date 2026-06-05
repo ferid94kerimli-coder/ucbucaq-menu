@@ -297,7 +297,7 @@ input[type=file] { display:none; }
     <div class="nav-item" onclick="showPage('analytics',this)"><span class="nav-icon">📈</span><span data-i18n="nav_analytics">Statistika</span></div>
     <div class="nav-item" onclick="showPage('theme',this)"><span class="nav-icon">&#127912;</span><span data-i18n="nav_theme">Görünüş</span></div>
     <div class="nav-item" onclick="showPage('qr',this)"><span class="nav-icon">&#128247;</span><span data-i18n="nav_qr">QR Kod</span></div>
-    <a id="sidebar-preview-link" href="/menu" target="_blank" class="nav-item" style="color:rgba(255,255,255,0.55);text-decoration:none"><span class="nav-icon">👁</span><span>Menyuya bax</span></a>
+    <a id="sidebar-preview-link" href="/menu" target="_blank" class="nav-item" style="color:rgba(255,255,255,0.55);text-decoration:none"><span class="nav-icon">👁</span><span data-i18n="nav_preview">Menyuya bax</span></a>
 
     <div class="nav-item" onclick="showPage('settings',this)"><span class="nav-icon">&#9881;</span><span data-i18n="nav_settings">Ayarlar</span></div>
     <div class="nav-item logout-nav" onclick="doLogout()"><span class="nav-icon">🚪</span><span data-i18n="logout">Çıxış</span></div>
@@ -312,7 +312,7 @@ input[type=file] { display:none; }
   <div class="page active" id="page-dashboard">
     <div class="page-header">
       <h2 class="page-title" data-i18n="nav_dashboard">Dashboard</h2>
-      <a id="preview-menu-link" href="/menu" target="_blank" class="btn btn-outline" style="font-size:0.8rem;text-decoration:none">👁 Menyuya bax</a>
+      <a id="preview-menu-link" href="/menu" target="_blank" class="btn btn-outline" style="font-size:0.8rem;text-decoration:none" data-i18n="preview_menu_btn">👁 Menyuya bax</a>
     </div>
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label" data-i18n="stat_items">Məhsullar</div><div class="stat-value" id="stat-items">0</div></div>
@@ -688,10 +688,10 @@ input[type=file] { display:none; }
       <!-- EHTİYAT NÜSXƏ -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1.25rem;border-bottom:1px solid var(--border)">
         <div>
-          <div style="font-size:0.85rem;font-weight:500;color:var(--text)">💾 Ehtiyat nüsxə</div>
-          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Bütün menyu məlumatlarını JSON kimi yüklə</div>
+          <div style="font-size:0.85rem;font-weight:500;color:var(--text)" data-i18n="backup">💾 Ehtiyat nüsxə</div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px" data-i18n="backupNote">Bütün menyu məlumatlarını JSON kimi yüklə</div>
         </div>
-        <a href="/api/data/export" download class="btn btn-sm btn-ghost" style="border:2px solid var(--border);text-decoration:none;color:var(--text)">⬇️ Yüklə</a>
+        <a href="/api/data/export" download class="btn btn-sm btn-ghost" style="border:2px solid var(--border);text-decoration:none;color:var(--text)" data-i18n="backupDownload">⬇️ Yüklə</a>
       </div>
 
       <!-- ŞİFRƏ DƏYİŞ -->
@@ -2279,6 +2279,12 @@ var I18N = {
     qrStep1New: 'QR kodu avtomatik hazırdır — <b>PNG yüklə</b> düyməsinə basın',
     qrStep2New: 'QR şəklini çap edib masaya qoyun',
     qrStep3New: 'Müştəri skan edəndə <b>birbaşa sizin menyunuza</b> keçir',
+    // Yeni əlavələr
+    nav_preview: 'Menyuya bax',
+    preview_menu_btn: '👁 Menyuya bax',
+    backup: '💾 Ehtiyat nüsxə',
+    backupNote: 'Bütün menyu məlumatlarını JSON kimi yüklə',
+    backupDownload: '⬇️ Yüklə',
   },
   en: {
     nav_dashboard: 'Dashboard',
@@ -2418,6 +2424,12 @@ var I18N = {
     qrStep1New: 'QR code is ready automatically — click <b>Download PNG</b>',
     qrStep2New: 'Print the QR image and place it on the table',
     qrStep3New: 'When customers scan, they go <b>directly to your menu</b>',
+    // New additions
+    nav_preview: 'View Menu',
+    preview_menu_btn: '👁 View Menu',
+    backup: '💾 Backup',
+    backupNote: 'Download all menu data as JSON',
+    backupDownload: '⬇️ Download',
   }
 };
 
