@@ -878,12 +878,7 @@ function normalizeItems(data) {
 }
 
 function loadFallbackState() {
-  // Yalnız server əlçatmaz olduqda istifadə edilir
-  try {
-    var u = (new URLSearchParams(window.location.search)).get('user') || 'default';
-    const saved = localStorage.getItem('cafe_data_' + u) || localStorage.getItem('cafe_data');
-    if (saved) return normalizeItems(JSON.parse(saved));
-  } catch(e) {}
+  // API cavab verməsə boş data göstər
   return EMBEDDED_DATA;
 }
 
@@ -1305,7 +1300,6 @@ fetch(dataUrl)
   .then(data => {
     if (data && (data.items !== undefined || data.categories)) {
       STATE = normalizeItems(data);
-      try { localStorage.setItem('cafe_data_' + (MENU_USER || 'default'), JSON.stringify(STATE)); } catch(e) {}
     }
     if (STATE.theme && STATE.theme.vars) applyThemeVars();
     if (STATE.font) applyFontVars();
