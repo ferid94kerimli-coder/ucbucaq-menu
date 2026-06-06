@@ -1000,7 +1000,9 @@ function openModal(item) {
   const ingredWrap = document.getElementById('modal-ingredients-wrap');
   const ingredEl = document.getElementById('modal-desc');
   const ingredLabel = document.getElementById('modal-ingredients-label');
-  const descText = (item.ingredients || '').trim();
+  const descText = lang === 'az'
+    ? (item.ingredientsAz || item.ingredients || '').trim()
+    : (item.ingredientsEn || item.ingredientsAz || item.ingredients || '').trim();
   if (descText) {
     ingredEl.textContent = descText;
     ingredLabel.textContent = lang === 'az' ? 'Tərkib' : 'Ingredients';
@@ -1137,7 +1139,7 @@ function render() {
         ? `<span class="badge badge-hot">${lang==='az'?'Məşhur':'Popular'}</span>`
         : '';
       const name = lang === 'az' ? item.nameAz : (item.nameEn || item.nameAz);
-      const desc = item.ingredients || '';
+      const desc = lang === 'az' ? (item.ingredientsAz || item.ingredients || '') : (item.ingredientsEn || item.ingredientsAz || item.ingredients || '');
       const _itemImg1 = item.image || item.img || '';
       const iconHtml = _itemImg1
         ? `<img src="${_itemImg1}" style="width:50px;height:50px;border-radius:12px;object-fit:cover;flex-shrink:0">`
@@ -1223,7 +1225,7 @@ function renderSearch() {
         ? `<span class="badge badge-hot">${lang==='az'?'Məşhur':'Popular'}</span>`
         : '';
       const name = lang === 'az' ? item.nameAz : (item.nameEn || item.nameAz);
-      const desc = item.ingredients || '';
+      const desc = lang === 'az' ? (item.ingredientsAz || item.ingredients || '') : (item.ingredientsEn || item.ingredientsAz || item.ingredients || '');
 
       // Highlight matched text
       const hlName = highlight(name, searchQuery);

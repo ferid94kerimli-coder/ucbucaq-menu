@@ -746,7 +746,8 @@ input[type=file] { display:none; }
     <div class="form-grid">
       <div class="form-group"><label id="label-name-az">Ad (AZ)</label><input type="text" id="f-name-az" placeholder="Espresso"></div>
       <div class="form-group"><label id="label-name-en">Ad (EN)</label><input type="text" id="f-name-en" placeholder="Espresso"></div>
-      <div class="form-group full"><label id="label-ingredients">Tərkib</label><textarea id="f-ingredients" placeholder="Süd, şəkər, vanil..."></textarea></div>
+      <div class="form-group"><label id="label-ingredients-az">Tərkib (AZ)</label><textarea id="f-ingredients-az" placeholder="Süd, şəkər, vanil..."></textarea></div>
+      <div class="form-group"><label id="label-ingredients-en">Ingredients (EN)</label><textarea id="f-ingredients-en" placeholder="Milk, sugar, vanilla..."></textarea></div>
       <div class="form-group"><label id="label-price">Qiymət (AZN)</label><input type="text" id="f-price" placeholder="3.50"></div>
       <div class="form-group"><label id="label-badge">Badge</label><select id="f-badge"><option value="null">Yoxdur</option><option value="new">Yeni</option><option value="hot">Məşhur</option></select></div>
       <div class="form-group"><label id="label-cat">Kateqoriya</label><select id="f-cat"></select></div>
@@ -1275,7 +1276,8 @@ function renderItemsTable() {
     var thumbBg = cat ? cat.bg : '#f5f0eb';
     var _pimg = item.image || item.img || ''; var _pico = (item.icon && item.icon !== 'undefined') ? item.icon : '🍽️'; var thumb = _pimg ? '<img src="'+_pimg+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">' : _pico;
     var itemName = az ? item.nameAz : (item.nameEn || item.nameAz);
-    var itemTd = '<td><div class="item-cell"><div class="item-thumb" style="background:'+thumbBg+'">'+thumb+'</div><div><div style="font-weight:500">'+itemName+'</div><div style="font-size:0.75rem;color:var(--muted)">'+(item.ingredients||'')+'</div></div></div></td>';
+    var itemIngr = az ? (item.ingredientsAz || item.ingredients || '') : (item.ingredientsEn || item.ingredientsAz || item.ingredients || '');
+    var itemTd = '<td><div class="item-cell"><div class="item-thumb" style="background:'+thumbBg+'">'+thumb+'</div><div><div style="font-weight:500">'+itemName+'</div><div style="font-size:0.75rem;color:var(--muted)">'+itemIngr+'</div></div></div></td>';
 
     // Price
     var priceTd = '<td style="font-weight:500;color:var(--accent)">'+item.price+' AZN</td>';
@@ -1371,7 +1373,7 @@ function bindImageInput() {
 function openAddItem() {
   editingItemIdx = null; tempImageBase64 = null; itemImageDeleted = false;
   document.getElementById('drawer-title').textContent = interfaceLang==='en' ? 'Add Item' : 'Məhsul əlavə et';
-  ['f-name-az','f-name-en','f-ingredients','f-price'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['f-name-az','f-name-en','f-ingredients-az','f-ingredients-en','f-price'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('f-badge').value = 'null';
   document.getElementById('img-preview-wrap').innerHTML = '<div class="placeholder"><span>&#128444;</span>Seçilmiş şəkil burada görünəcək</div>';
   document.getElementById('item-img-del-btn').style.display = 'none';
@@ -1385,7 +1387,8 @@ function editItem(idx) {
   document.getElementById('drawer-title').textContent = interfaceLang==='en' ? 'Edit Item' : 'Məhsulu düzəlt';
   document.getElementById('f-name-az').value = item.nameAz;
   document.getElementById('f-name-en').value = item.nameEn;
-  document.getElementById('f-ingredients').value = item.ingredients || '';
+  document.getElementById('f-ingredients-az').value = item.ingredientsAz || item.ingredients || '';
+  document.getElementById('f-ingredients-en').value = item.ingredientsEn || '';
   document.getElementById('f-price').value = item.price;
   document.getElementById('f-badge').value = item.badge;
   var _eimg = item.image || item.img || '';
@@ -1427,7 +1430,8 @@ function saveItem() {
     catId: document.getElementById('f-cat').value,
     nameAz: nameAz,
     nameEn: document.getElementById('f-name-en').value.trim(),
-    ingredients: document.getElementById('f-ingredients').value.trim(),
+    ingredientsAz: document.getElementById('f-ingredients-az').value.trim(),
+    ingredientsEn: document.getElementById('f-ingredients-en').value.trim(),
     price: document.getElementById('f-price').value.trim(),
     badge: document.getElementById('f-badge').value,
     icon: '🍽️',
@@ -2561,6 +2565,8 @@ function applyI18n(lang) {
     'label-name-en': az ? 'Ad (EN)' : 'Name (EN)',
     'label-desc-az': az ? 'Təsvir (AZ)' : 'Description (AZ)',
     'label-desc-en': az ? 'Təsvir (EN)' : 'Description (EN)',
+    'label-ingredients-az': az ? 'Tərkib (AZ)' : 'Ingredients (AZ)',
+    'label-ingredients-en': az ? 'Tərkib (EN)' : 'Ingredients (EN)',
     'label-price':   az ? 'Qiymət (AZN)' : 'Price (AZN)',
     'label-badge':   az ? 'Badge' : 'Badge',
     'label-icon':    az ? 'Emoji (şəkil yoxdursa)' : 'Emoji (if no image)',
