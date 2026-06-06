@@ -867,11 +867,13 @@ function doForgotPassword() {
 
 // ── ŞİFRƏ SIFIRLAMA (token linki ilə) ──
 var RESET_TOKEN = null;
+var _forceChangePass = false;  // must_change_password flag-i ilə açılır
 function checkResetToken() {
   var params = new URLSearchParams(window.location.search);
   var token = params.get('reset_token');
   if (!token) return;
   RESET_TOKEN = token;
+  _forceChangePass = false;
   document.getElementById('reset-pass1').value = '';
   document.getElementById('reset-pass2').value = '';
   document.getElementById('reset-msg').textContent = '';
@@ -880,6 +882,19 @@ function checkResetToken() {
   document.getElementById('reset-modal').style.display = 'flex';
   // URL-dən token-i sil (görünməsin)
   window.history.replaceState({}, document.title, '/admin');
+}
+function openForceChangeModal() {
+  _forceChangePass = true;
+  RESET_TOKEN = null;
+  document.getElementById('reset-pass1').value = '';
+  document.getElementById('reset-pass2').value = '';
+  document.getElementById('reset-msg').textContent = 'İlk girişdə şifrənizi dəyişməlisiniz.';
+  document.getElementById('reset-msg').style.color = '#fcd34d';
+  document.getElementById('reset-btn').disabled = false;
+  document.getElementById('reset-btn').style.display = '';
+  document.getElementById('reset-btn').textContent = 'Şifrəni yenilə';
+  document.getElementById('reset-modal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('reset-pass1').focus(); }, 150);
 }
 function doResetPassword() {
   var pass1 = document.getElementById('reset-pass1').value;
@@ -891,6 +906,29 @@ function doResetPassword() {
   if (pass1 !== pass2)  { msgEl.textContent = 'Şifrələr uyğun deyil'; return; }
   if (pass1.length < 6) { msgEl.textContent = 'Ən az 6 simvol olmalıdır'; return; }
   btn.disabled = true; btn.textContent = '⏳ Yenilənir...';
+  if (_forceChangePass) {
+    var sess = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
+    fetch('/api/users/' + sess.username + '/set-password', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({password: pass1})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.ok) {
+        msgEl.style.color = '#86efac';
+        msgEl.textContent = '✅ Şifrə uğurla yeniləndi!';
+        btn.style.display = 'none';
+        _forceChangePass = false;
+        setTimeout(function(){ document.getElementById('reset-modal').style.display = 'none'; }, 1800);
+      } else {
+        msgEl.textContent = d.error || 'Xəta baş verdi';
+        btn.disabled = false; btn.textContent = 'Şifrəni yenilə';
+      }
+    }).catch(function(){
+      msgEl.textContent = 'Server bağlantı xətası';
+      btn.disabled = false; btn.textContent = 'Şifrəni yenilə';
+    });
+    return;
+  }
   fetch('/api/reset-password', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -946,6 +984,9 @@ function doLogin() {
       showAdminUI(d.username, d.role);
       document.getElementById('login-screen').classList.add('hidden');
       setTimeout(function(){ document.getElementById('login-screen').style.display = 'none'; }, 400);
+      if (d.must_change_password) {
+        setTimeout(openForceChangeModal, 500);
+      }
     } else {
       errEl.textContent = d.error || 'İstifadəçi adı və ya şifrə yanlışdır';
       passEl.classList.add('error'); passEl.value = ''; passEl.focus();
@@ -3036,31 +3077,22 @@ function changePassword() {
   var cur = document.getElementById('s-cur-pass').value;
   var nw  = document.getElementById('s-new-pass').value;
   var nw2 = document.getElementById('s-new-pass2').value;
-  var session = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
-  var username = session.username;
   if (!cur || !nw || !nw2) { showToast(interfaceLang==='en'?'Fill in all fields':'Bütün xanaları doldurun'); return; }
   if (nw !== nw2) { showToast(interfaceLang==='en'?'New passwords do not match':'Yeni şifrələr uyğun deyil'); return; }
   if (nw.length < 6) { showToast(interfaceLang==='en'?'Password must be at least 6 characters':'Şifrə ən az 6 simvol olmalıdır'); return; }
-  fetch('/api/login', {
+  fetch('/api/change-password', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({username: username, password: cur})
+    body: JSON.stringify({old_password: cur, new_password: nw})
   }).then(function(r){ return r.json(); }).then(function(d){
-    if (!d.ok) { showToast(interfaceLang==='en'?'Current password is incorrect':'Cari şifrə yanlışdır'); return; }
-    fetch('/api/users/' + username + '/set-password', {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({password: nw})
-    }).then(function(r){ return r.json(); }).then(function(d){
-      if (d.ok) {
-        document.getElementById('s-cur-pass').value = '';
-        document.getElementById('s-new-pass').value = '';
-        document.getElementById('s-new-pass2').value = '';
-        showToast(interfaceLang==='en'?'Password updated successfully':'Sifrə uğurla yeniləndi');
-      } else {
-        showToast(d.error || (interfaceLang==='en'?'An error occurred':'Xəta baş verdi'));
-      }
-    });
+    if (d.ok) {
+      document.getElementById('s-cur-pass').value = '';
+      document.getElementById('s-new-pass').value = '';
+      document.getElementById('s-new-pass2').value = '';
+      showToast(interfaceLang==='en'?'Password updated successfully':'Şifrə uğurla yeniləndi');
+    } else {
+      showToast(d.error || (interfaceLang==='en'?'An error occurred':'Xəta baş verdi'));
+    }
   }).catch(function(){ showToast(interfaceLang==='en'?'Connection error':'Bağlantı xətası'); });
 }
 

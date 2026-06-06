@@ -42,6 +42,19 @@ def _record_failed_attempt(ip: str) -> None:
 def _clear_attempts(ip: str) -> None:
     _login_attempts.pop(ip, None)
 
+# ── FORGOT-PASSWORD RATE LIMITING (ayrı bucketdə) ──
+_forgot_attempts: dict = defaultdict(list)
+_FORGOT_MAX = 3
+_FORGOT_WINDOW = 300  # 5 dəqiqə
+
+def _is_forgot_limited(ip: str) -> bool:
+    now = time.time()
+    _forgot_attempts[ip] = [t for t in _forgot_attempts[ip] if now - t < _FORGOT_WINDOW]
+    return len(_forgot_attempts[ip]) >= _FORGOT_MAX
+
+def _record_forgot_attempt(ip: str) -> None:
+    _forgot_attempts[ip].append(time.time())
+
 # ── CLOUDINARY KONFİQURASİYASI ──
 cloudinary.config(
     cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
@@ -582,6 +595,30 @@ def api_set_user_password(username):
     log_action(current_user(), 'set_password', {'username': username}, ip)
     return jsonify({'ok': True})
 
+@app.route('/api/change-password', methods=['POST'])
+@login_required
+def api_change_password():
+    username = current_user()
+    data = request.json or {}
+    old_password = data.get('old_password', '')
+    new_password = data.get('new_password', '')
+    if not old_password or not new_password:
+        return jsonify({'error': 'Köhnə və yeni şifrə tələb olunur'}), 400
+    if len(new_password) < 6:
+        return jsonify({'error': 'Şifrə ən az 6 simvol olmalıdır'}), 400
+    users = load_users()
+    if username not in users or not check_password_hash(users[username]['password'], old_password):
+        return jsonify({'error': 'Cari şifrə yanlışdır'}), 401
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE users SET password = %s, must_change_password = FALSE WHERE username = %s",
+            (generate_password_hash(new_password), username)
+        )
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    log_action(username, 'set_password', {'username': username}, ip)
+    return jsonify({'ok': True})
+
 @app.route('/api/users/<username>/email', methods=['PUT'])
 @login_required
 def api_update_user_email(username):
@@ -689,6 +726,10 @@ def api_clear_stats():
 
 @app.route('/api/forgot-password', methods=['POST'])
 def api_forgot_password():
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if _is_forgot_limited(ip):
+        return jsonify({'error': 'Çox sayda cəhd. 5 dəqiqə gözləyin.'}), 429
+
     data = request.json or {}
     username = data.get('username', '').strip()
     if not username:
@@ -700,10 +741,12 @@ def api_forgot_password():
         user = cur.fetchone()
 
     if not user:
+        _record_forgot_attempt(ip)
         return jsonify({'error': 'Bu istifadəçi adı tapılmadı'}), 400
 
     recipient_email = (user['email'] or '').strip()
     if not recipient_email or '@' not in recipient_email:
+        _record_forgot_attempt(ip)
         return jsonify({'error': 'Bu istifadəçiyə email təyin edilməyib. Superadmin ilə əlaqə saxlayın.'}), 400
 
     try:
