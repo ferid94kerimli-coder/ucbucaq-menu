@@ -1558,6 +1558,10 @@ function cartOverlayClick(e) {
     el.scrollLeft = scrollLeft - (x - startX);
   });
 })();
+
+if ('serviceWorker' in navigator && '{{ menu_user }}') {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>

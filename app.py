@@ -15,7 +15,7 @@ from psycopg2.extras import RealDictCursor
 import cloudinary
 import cloudinary.uploader
 
-app = Flask(__name__, template_folder='templates')
+app = Flask(__name__, template_folder='templates', static_folder='static')
 Compress(app)
 
 _secret_key = os.environ.get('SECRET_KEY')
@@ -976,6 +976,14 @@ def api_import_data():
 # ────────────────────────────────────────────────────────────────
 # HEALTH CHECK
 # ────────────────────────────────────────────────────────────────
+
+@app.route('/sw.js')
+def serve_sw():
+    resp = make_response(app.send_static_file('sw.js'))
+    resp.headers['Content-Type'] = 'application/javascript'
+    resp.headers['Service-Worker-Allowed'] = '/'
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
 
 @app.route('/health')
 def health():
