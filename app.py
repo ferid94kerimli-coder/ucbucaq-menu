@@ -51,7 +51,7 @@ _FORGOT_WINDOW = 300  # 5 dəqiqə
 
 # ── MENYU DATA CACHE (server-side, public sorğular üçün) ──
 _data_cache: dict = {}   # {username: (data_dict, timestamp)}
-_DATA_CACHE_TTL = 30     # saniyə
+_DATA_CACHE_TTL = 300    # saniyə (5 dəqiqə)
 
 def _get_cached_data(username: str):
     entry = _data_cache.get(username)
@@ -64,6 +64,22 @@ def _set_cached_data(username: str, data: dict) -> None:
 
 def _invalidate_cache(username: str) -> None:
     _data_cache.pop(username, None)
+
+# ── USERS CACHE ──
+_users_cache: dict = {'data': None, 'ts': 0.0}
+_USERS_CACHE_TTL = 600  # saniyə (10 dəqiqə)
+
+def _get_cached_users():
+    if _users_cache['data'] is not None and time.time() - _users_cache['ts'] < _USERS_CACHE_TTL:
+        return _users_cache['data']
+    return None
+
+def _set_cached_users(users: dict) -> None:
+    _users_cache['data'] = users
+    _users_cache['ts'] = time.time()
+
+def _invalidate_users_cache() -> None:
+    _users_cache['data'] = None
 
 def _is_forgot_limited(ip: str) -> bool:
     now = time.time()
@@ -242,16 +258,21 @@ def init_db():
 # ────────────────────────────────────────────────────────────────
 
 def load_users():
+    cached = _get_cached_users()
+    if cached is not None:
+        return cached
     with db_conn() as conn:
         cur = conn.cursor()
         cur.execute("SELECT username, password, role, email, must_change_password FROM users")
         rows = cur.fetchall()
-    return {r['username']: {
+    users = {r['username']: {
         'password': r['password'],
         'role': r['role'],
         'email': r['email'] or '',
         'must_change_password': r['must_change_password']
     } for r in rows}
+    _set_cached_users(users)
+    return users
 
 def save_user(username, password_hash, role, email=''):
     with db_conn() as conn:
@@ -262,11 +283,13 @@ def save_user(username, password_hash, role, email=''):
                SET password=EXCLUDED.password, role=EXCLUDED.role, email=EXCLUDED.email""",
             (username, password_hash, role, email)
         )
+    _invalidate_users_cache()
 
 def delete_user(username):
     with db_conn() as conn:
         cur = conn.cursor()
         cur.execute("DELETE FROM users WHERE username = %s", (username,))
+    _invalidate_users_cache()
 
 # ────────────────────────────────────────────────────────────────
 # MENYU DATA — race-condition-free
@@ -959,7 +982,15 @@ def health():
     try:
         with db_conn() as conn:
             conn.cursor().execute('SELECT 1')
-        return jsonify({'status': 'ok', 'db': 'connected'})
+        # Cache-ləri isti saxla: UptimeRobot hər 5 dəq ping edir
+        users = load_users()
+        for uname in users:
+            if _get_cached_data(uname) is None:
+                try:
+                    _set_cached_data(uname, load_user_data(uname))
+                except Exception:
+                    pass
+        return jsonify({'status': 'ok', 'db': 'connected', 'cached': len(users)})
     except Exception as e:
         return jsonify({'status': 'error', 'db': str(e)}), 500
 
