@@ -47,6 +47,22 @@ _forgot_attempts: dict = defaultdict(list)
 _FORGOT_MAX = 3
 _FORGOT_WINDOW = 300  # 5 dəqiqə
 
+# ── MENYU DATA CACHE (server-side, public sorğular üçün) ──
+_data_cache: dict = {}   # {username: (data_dict, timestamp)}
+_DATA_CACHE_TTL = 30     # saniyə
+
+def _get_cached_data(username: str):
+    entry = _data_cache.get(username)
+    if entry and time.time() - entry[1] < _DATA_CACHE_TTL:
+        return entry[0]
+    return None
+
+def _set_cached_data(username: str, data: dict) -> None:
+    _data_cache[username] = (data, time.time())
+
+def _invalidate_cache(username: str) -> None:
+    _data_cache.pop(username, None)
+
 def _is_forgot_limited(ip: str) -> bool:
     now = time.time()
     _forgot_attempts[ip] = [t for t in _forgot_attempts[ip] if now - t < _FORGOT_WINDOW]
@@ -435,13 +451,22 @@ def api_get_data():
     users = load_users()
     if username not in users:
         return jsonify({'error': 'İstifadəçi tapılmadı'}), 404
+
+    is_public = bool(requested_user and requested_user != logged_in)
+
+    if is_public:
+        # Server cache-dən oxu — DB sorğusundan qaç
+        cached = _get_cached_data(username)
+        if cached is None:
+            cached = load_user_data(username)
+            _set_cached_data(username, cached)
+        data = {k: cached[k] for k in ('cafe', 'categories', 'items', 'theme') if k in cached}
+        resp = make_response(jsonify(data))
+        resp.headers['Cache-Control'] = 'public, max-age=30'
+        return resp
+
     db = load_user_data(username)
-    # Müştəri (public) sorğusu — statistikaları gizlət
-    if requested_user and requested_user != logged_in:
-        data = {k: db[k] for k in ('cafe', 'categories', 'items', 'theme') if k in db}
-    else:
-        data = db
-    resp = make_response(jsonify(data))
+    resp = make_response(jsonify(db))
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
     resp.headers['Pragma'] = 'no-cache'
     return resp
@@ -461,6 +486,7 @@ def api_save_data():
         for key in changed:
             db[key] = incoming[key]
         _upsert_user_data(cur, username, db)
+    _invalidate_cache(username)
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     log_action(username, 'save_data', {'keys': changed}, ip)
     return jsonify({'ok': True})

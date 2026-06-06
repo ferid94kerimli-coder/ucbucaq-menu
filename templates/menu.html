@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Menyu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1296,30 +1298,55 @@ var MENU_USER = (function() {
   return p.get('user') || '';
 })();
 
-// Flask API-dən data yüklə — server yoxdursa localStorage ilə davam et
+// ── MENYU DATA YÜKLƏMƏ (stale-while-revalidate) ──
 var dataUrl = MENU_USER ? '/api/data?user=' + encodeURIComponent(MENU_USER) : '/api/data';
-fetch(dataUrl)
-  .then(r => { if (!r.ok) throw new Error('no server'); return r.json(); })
-  .then(data => {
-    if (data && (data.items !== undefined || data.categories)) {
-      STATE = normalizeItems(data);
-    }
-    if (STATE.theme && STATE.theme.vars) applyThemeVars();
-    if (STATE.font) applyFontVars();
-    if (STATE.layout) applyLayoutVars();
-    if (STATE.customCss) applyCustomCss();
-    render();
-    loadLogo();
-    renderServiceFeeBanner();
-    trackMenuOpen();
-  })
-  .catch(() => {
-    // Server yoxdur — localStorage-dakı data ilə işlə, xəta göstərmə
-    render();
-    loadLogo();
-    renderServiceFeeBanner();
-    trackMenuOpen();
-  });
+var _cacheKey = 'menu_v1_' + (MENU_USER || 'default');
+
+function _applyState() {
+  if (STATE.theme && STATE.theme.vars) applyThemeVars();
+  if (STATE.font) applyFontVars();
+  if (STATE.layout) applyLayoutVars();
+  if (STATE.customCss) applyCustomCss();
+  render();
+  loadLogo();
+  renderServiceFeeBanner();
+}
+
+var _cachedData = null;
+try { _cachedData = JSON.parse(localStorage.getItem(_cacheKey) || 'null'); } catch(e) {}
+
+if (_cachedData) {
+  // Cache varsa — dərhal render et, arxa planda yenilə
+  STATE = normalizeItems(_cachedData);
+  _applyState();
+  trackMenuOpen();
+  fetch(dataUrl)
+    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    .then(data => {
+      try { localStorage.setItem(_cacheKey, JSON.stringify(data)); } catch(e) {}
+      if (data && (data.items !== undefined || data.categories)) {
+        STATE = normalizeItems(data);
+        _applyState();
+      }
+    })
+    .catch(() => {});
+} else {
+  // Cache yoxdur — API cavabını gözlə
+  fetch(dataUrl)
+    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    .then(data => {
+      try { localStorage.setItem(_cacheKey, JSON.stringify(data)); } catch(e) {}
+      if (data && (data.items !== undefined || data.categories)) {
+        STATE = normalizeItems(data);
+      }
+      _applyState();
+      trackMenuOpen();
+    })
+    .catch(() => {
+      _applyState();
+      trackMenuOpen();
+    });
+}
 
 // ── HOURS BADGE ──
 const DAYS_AZ = ['Bazar ertəsi','Çərşənbə axşamı','Çərşənbə','Cümə axşamı','Cümə','Şənbə','Bazar'];
