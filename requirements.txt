@@ -1,5 +1,6 @@
 flask
 flask-mail
+flask-compress
 pillow
 werkzeug
 gunicorn

@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, make_response
+from flask_compress import Compress
 from functools import wraps
 import contextlib, copy, json, os, uuid, secrets, time
 from datetime import datetime, timedelta
@@ -15,6 +16,7 @@ import cloudinary
 import cloudinary.uploader
 
 app = Flask(__name__, template_folder='templates')
+Compress(app)
 
 _secret_key = os.environ.get('SECRET_KEY')
 if not _secret_key:
@@ -391,7 +393,16 @@ def menu():
 
 @app.route('/menu/<username>')
 def menu_user(username):
-    return render_template('menu.html', menu_user=username)
+    users = load_users()
+    embedded = None
+    if username in users:
+        cached = _get_cached_data(username)
+        if cached is None:
+            cached = load_user_data(username)
+            _set_cached_data(username, cached)
+        pub = {k: cached[k] for k in ('cafe', 'categories', 'items', 'theme') if k in cached}
+        embedded = json.dumps(pub, ensure_ascii=False)
+    return render_template('menu.html', menu_user=username, embedded_data=embedded)
 
 @app.route('/admin')
 def admin():

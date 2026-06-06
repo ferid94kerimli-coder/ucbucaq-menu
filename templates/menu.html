@@ -861,11 +861,8 @@
 </div>
 
 <script>
-// ── localStorage-dan data oxu (admin.html ilə sinxron) ──
-// ── FLASK API ──
-
-// ── EMBEDDED DATA — API cavab verməsə boş göstər ──
-const EMBEDDED_DATA = {"cafe":{"nameAz":"","nameEn":"","addrAz":"","addrEn":"","phone":"","icon":"🍽️"},"categories":[],"items":[]};
+// ── EMBEDDED DATA — Flask serverdən birbaşa HTML-ə yazılır ──
+const EMBEDDED_DATA = {% if embedded_data %}{{ embedded_data | safe }}{% else %}{"cafe":{"nameAz":"","nameEn":"","addrAz":"","addrEn":"","phone":"","icon":"🍽️"},"categories":[],"items":[]}{% endif %};
 
 function normalizeItems(data) {
   if (data && data.items) {
@@ -1298,8 +1295,7 @@ var MENU_USER = (function() {
   return p.get('user') || '';
 })();
 
-// ── MENYU DATA YÜKLƏMƏ (stale-while-revalidate) ──
-var dataUrl = MENU_USER ? '/api/data?user=' + encodeURIComponent(MENU_USER) : '/api/data';
+// ── MENYU DATA YÜKLƏMƏ ──
 var _cacheKey = 'menu_v1_' + (MENU_USER || 'default');
 
 function _applyState() {
@@ -1312,40 +1308,26 @@ function _applyState() {
   renderServiceFeeBanner();
 }
 
-var _cachedData = null;
-try { _cachedData = JSON.parse(localStorage.getItem(_cacheKey) || 'null'); } catch(e) {}
+// EMBEDDED_DATA serverdan gəlir — dərhal, sorğusuz render et
+if (EMBEDDED_DATA && (EMBEDDED_DATA.items !== undefined || EMBEDDED_DATA.categories)) {
+  STATE = normalizeItems(EMBEDDED_DATA);
+  try { localStorage.setItem(_cacheKey, JSON.stringify(EMBEDDED_DATA)); } catch(e) {}
+}
+_applyState();
+trackMenuOpen();
 
-if (_cachedData) {
-  // Cache varsa — dərhal render et, arxa planda yenilə
-  STATE = normalizeItems(_cachedData);
-  _applyState();
-  trackMenuOpen();
+// Admin menyu və ya embedded data olmadıqda API-dən yüklə
+if (!MENU_USER) {
+  var dataUrl = '/api/data';
   fetch(dataUrl)
-    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    .then(r => r.ok ? r.json() : null)
     .then(data => {
-      try { localStorage.setItem(_cacheKey, JSON.stringify(data)); } catch(e) {}
       if (data && (data.items !== undefined || data.categories)) {
         STATE = normalizeItems(data);
         _applyState();
       }
     })
     .catch(() => {});
-} else {
-  // Cache yoxdur — API cavabını gözlə
-  fetch(dataUrl)
-    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-    .then(data => {
-      try { localStorage.setItem(_cacheKey, JSON.stringify(data)); } catch(e) {}
-      if (data && (data.items !== undefined || data.categories)) {
-        STATE = normalizeItems(data);
-      }
-      _applyState();
-      trackMenuOpen();
-    })
-    .catch(() => {
-      _applyState();
-      trackMenuOpen();
-    });
 }
 
 // ── HOURS BADGE ──
