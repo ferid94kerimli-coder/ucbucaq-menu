@@ -961,6 +961,7 @@ function showAdminUI(username, role) {
   if (dashLink) dashLink.href = previewUrl;
   if (sideLink) sideLink.href = previewUrl;
 
+  if (role === 'superadmin') renderUsersList();
   loadFromServer();
 }
 function doLogout() {
@@ -2643,7 +2644,6 @@ function applyI18n(lang) {
   if (document.getElementById('layout-grid'))  renderLayoutGrid();
   if (document.getElementById('print-template-grid')) renderPrintPage();
   if (document.getElementById('cats-list'))    renderCatsPage();
-  if (document.getElementById('users-list'))   renderUsersList();
 }
 
 function setInterfaceLang(lang) {
@@ -2670,8 +2670,6 @@ function setInterfaceLang(lang) {
 var editingUserKey = null;
 
 function renderSettingsPage() {
-  // Sync lang buttons
-  setInterfaceLang(interfaceLang);
   renderUsersList();
   loadUserEmailInput();
 }
