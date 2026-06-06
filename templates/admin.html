@@ -2918,17 +2918,21 @@ function loadUserEmailInput() {
 }
 
 function saveUserEmail() {
-  var session = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
-  var username = session.username;
+  var sess = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
+  var username = sess.username;
   if (!username) { showToast(interfaceLang==='en'?'Login required':'Giriş tələb olunur'); return; }
   var email = (document.getElementById('s-email') || {}).value.trim();
   fetch('/api/users/' + username + '/email', {
     method: 'PUT',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({username: email})
+    body: JSON.stringify({email: email})
   }).then(function(r){ return r.json(); }).then(function(d){
-    if (d.ok) showToast(interfaceLang==='en'?'✅ Email saved':'✅ Email yadda saxlandı');
-    else showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
+    if (d.ok) {
+      if (d.email_sent) showToast(interfaceLang==='en'?'✅ Email saved. Reset link sent.':'✅ Email yadda saxlandı. Sıfırlama linki göndərildi.');
+      else showToast(interfaceLang==='en'?'✅ Email saved':'✅ Email yadda saxlandı');
+    } else {
+      showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
+    }
   }).catch(function(){ showToast(interfaceLang==='en'?'❌ Connection error':'❌ Bağlantı xətası'); });
 }
 
@@ -3030,6 +3034,8 @@ function saveUser() {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({email: emailVal.trim()})
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (d.ok && d.email_sent) showToast(interfaceLang==='en'?'📧 Reset link sent to new email':'📧 Yeni emailə sıfırlama linki göndərildi');
       });
     }
     // Şifrə dəyişilibsə onu da yenilə
@@ -3047,8 +3053,13 @@ function saveUser() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({username: username, password: pass, role: role, email: document.getElementById('u-email').value.trim()})
     }).then(function(r){ return r.json(); }).then(function(d){
-      if (d.ok) showToast(interfaceLang==='en'?'✅ User added':'✅ İstifadəçi əlavə edildi');
-      else showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
+      if (d.ok) {
+        var msg = interfaceLang==='en'?'✅ User added':'✅ İstifadəçi əlavə edildi';
+        if (d.email_sent) msg += interfaceLang==='en'?' · Reset link sent':'· Sıfırlama linki göndərildi';
+        showToast(msg);
+      } else {
+        showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
+      }
       renderUsersList();
     });
   }
