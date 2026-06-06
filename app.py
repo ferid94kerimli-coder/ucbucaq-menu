@@ -430,6 +430,16 @@ def menu_user(username):
             cached = load_user_data(username)
             _set_cached_data(username, cached)
         pub = {k: cached[k] for k in ('cafe', 'categories', 'items', 'theme') if k in cached}
+        # Strip base64 images from embedded data — they inflate HTML to MBs.
+        # Browser will show emoji icon instead; Cloudinary URLs are kept as-is.
+        def _strip_b64(obj):
+            if isinstance(obj, dict):
+                return {k: ('' if isinstance(v, str) and v.startswith('data:') else _strip_b64(v))
+                        for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [_strip_b64(i) for i in obj]
+            return obj
+        pub = _strip_b64(pub)
         embedded = json.dumps(pub, ensure_ascii=False)
     return render_template('menu.html', menu_user=username, embedded_data=embedded)
 
