@@ -685,6 +685,23 @@ input[type=file] { display:none; }
         <div id="users-list" style="padding:0 1.25rem 1rem"></div>
       </div>
 
+      <!-- AUDİT LOG (superadmin) -->
+      <div class="superadmin-only" style="display:none;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1.25rem">
+          <div>
+            <div style="font-size:0.85rem;font-weight:500;color:var(--text)">📋 <span data-i18n="auditLog">Hərəkət jurnalı</span></div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:2px" data-i18n="auditLogNote">Son 30 gündəki dəyişikliklər</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select id="audit-user-filter" onchange="renderAuditLog()" style="font-size:0.78rem;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">
+              <option value="" data-i18n="auditAllUsers">Hamısı</option>
+            </select>
+            <button class="btn btn-sm btn-ghost" onclick="renderAuditLog()" style="border:1px solid var(--border)" data-i18n="refresh">↻ Yenilə</button>
+          </div>
+        </div>
+        <div id="audit-log-list" style="padding:0 1.25rem 1rem;max-height:300px;overflow-y:auto"></div>
+      </div>
+
       <!-- EHTİYAT NÜSXƏ -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1.25rem;border-bottom:1px solid var(--border)">
         <div>
@@ -961,7 +978,7 @@ function showAdminUI(username, role) {
   if (dashLink) dashLink.href = previewUrl;
   if (sideLink) sideLink.href = previewUrl;
 
-  if (role === 'superadmin') renderUsersList();
+  if (role === 'superadmin') { renderUsersList(); renderAuditLog(); }
   loadFromServer();
 }
 function doLogout() {
@@ -2286,6 +2303,24 @@ var I18N = {
     backup: '💾 Ehtiyat nüsxə',
     backupNote: 'Bütün menyu məlumatlarını JSON kimi yüklə',
     backupDownload: '⬇️ Yüklə',
+    auditLog: '📋 Hərəkət jurnalı',
+    auditLogNote: 'Son 30 gündəki dəyişikliklər',
+    auditAllUsers: 'Hamısı',
+    refresh: '↻ Yenilə',
+    auditUser: 'İstifadəçi',
+    auditAction: 'Əməliyyat',
+    auditTime: 'Vaxt',
+    noLogs: 'Qeyd yoxdur',
+    logLogin: 'Giriş etdi',
+    logLogout: 'Çıxış etdi',
+    logLoginFailed: 'Uğursuz giriş cəhdi',
+    logSave: 'Məlumat saxladı',
+    logUpload: 'Şəkil yüklədi',
+    logDeleteImg: 'Şəkil sildi',
+    logAddUser: 'İstifadəçi əlavə etdi',
+    logDeleteUser: 'İstifadəçi sildi',
+    logChangeRole: 'Rol dəyişdi',
+    logSetPass: 'Şifrə dəyişdirildi',
   },
   en: {
     nav_dashboard: 'Dashboard',
@@ -2431,6 +2466,24 @@ var I18N = {
     backup: '💾 Backup',
     backupNote: 'Download all menu data as JSON',
     backupDownload: '⬇️ Download',
+    auditLog: '📋 Activity Log',
+    auditLogNote: 'Changes in the last 30 days',
+    auditAllUsers: 'All users',
+    refresh: '↻ Refresh',
+    auditUser: 'User',
+    auditAction: 'Action',
+    auditTime: 'Time',
+    noLogs: 'No records found',
+    logLogin: 'Logged in',
+    logLogout: 'Logged out',
+    logLoginFailed: 'Failed login attempt',
+    logSave: 'Saved data',
+    logUpload: 'Uploaded image',
+    logDeleteImg: 'Deleted image',
+    logAddUser: 'Added user',
+    logDeleteUser: 'Deleted user',
+    logChangeRole: 'Changed role',
+    logSetPass: 'Changed password',
   }
 };
 
@@ -2671,7 +2724,65 @@ var editingUserKey = null;
 
 function renderSettingsPage() {
   renderUsersList();
+  renderAuditLog();
   loadUserEmailInput();
+}
+
+function renderAuditLog() {
+  var list = document.getElementById('audit-log-list');
+  if (!list) return;
+  var t = I18N[interfaceLang];
+  var filter = document.getElementById('audit-user-filter');
+  var userParam = filter ? filter.value : '';
+  list.innerHTML = '<p style="font-size:0.8rem;color:var(--muted);padding:4px 0">' + (t.loading || 'Yüklənir...') + '</p>';
+  var url = '/api/admin/audit-log?limit=100' + (userParam ? '&user=' + encodeURIComponent(userParam) : '');
+  fetch(url).then(function(r) {
+    if (!r.ok) { list.innerHTML = ''; return null; }
+    return r.json();
+  }).then(function(rows) {
+    if (!rows || !rows.length) {
+      list.innerHTML = '<p style="font-size:0.8rem;color:var(--muted);padding:4px 0">' + (t.noLogs || 'Qeyd yoxdur') + '</p>';
+      return;
+    }
+    var actionMap = {
+      login: t.logLogin, logout: t.logLogout, login_failed: t.logLoginFailed,
+      save_data: t.logSave, upload_image: t.logUpload, delete_image: t.logDeleteImg,
+      add_user: t.logAddUser, delete_user: t.logDeleteUser,
+      change_role: t.logChangeRole, set_password: t.logSetPass
+    };
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:0.78rem">';
+    html += '<thead><tr style="border-bottom:2px solid var(--border)">';
+    html += '<th style="text-align:left;padding:4px 6px;color:var(--muted);font-weight:500">' + (t.auditUser||'İstifadəçi') + '</th>';
+    html += '<th style="text-align:left;padding:4px 6px;color:var(--muted);font-weight:500">' + (t.auditAction||'Əməliyyat') + '</th>';
+    html += '<th style="text-align:right;padding:4px 6px;color:var(--muted);font-weight:500">' + (t.auditTime||'Vaxt') + '</th>';
+    html += '</tr></thead><tbody>';
+    rows.forEach(function(r) {
+      html += '<tr style="border-bottom:1px solid var(--border)">';
+      html += '<td style="padding:5px 6px;font-weight:500">' + r.username + '</td>';
+      html += '<td style="padding:5px 6px">' + (actionMap[r.action] || r.action) + '</td>';
+      html += '<td style="padding:5px 6px;color:var(--muted);text-align:right;white-space:nowrap">' + auditTimeAgo(r.ts) + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    list.innerHTML = html;
+    if (filter && filter.options.length <= 1) {
+      var seen = {};
+      rows.forEach(function(r) { seen[r.username] = 1; });
+      Object.keys(seen).sort().forEach(function(u) {
+        var opt = document.createElement('option'); opt.value = u; opt.textContent = u;
+        filter.appendChild(opt);
+      });
+    }
+  }).catch(function() { list.innerHTML = ''; });
+}
+
+function auditTimeAgo(isoStr) {
+  var diff = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+  var t = I18N[interfaceLang];
+  if (diff < 60)   return diff + (t._secAgo || ' san əvvəl');
+  if (diff < 3600) return Math.floor(diff/60)   + (t._minAgo || ' dəq əvvəl');
+  if (diff < 86400)return Math.floor(diff/3600) + (t._hrAgo  || ' saat əvvəl');
+  return               Math.floor(diff/86400)   + (t._dayAgo || ' gün əvvəl');
 }
 
 function loadUserEmailInput() {
