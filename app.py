@@ -196,9 +196,15 @@ def init_db():
             CREATE TABLE IF NOT EXISTS reset_tokens (
                 token    TEXT PRIMARY KEY,
                 username TEXT NOT NULL,
-                expires  TIMESTAMP NOT NULL,
+                expires  TIMESTAMPTZ NOT NULL,
                 used     BOOLEAN NOT NULL DEFAULT FALSE
             )
+        """)
+        # Köhnə sxemdə expires TEXT ola bilər — migration
+        cur.execute("""
+            ALTER TABLE reset_tokens
+            ALTER COLUMN expires TYPE TIMESTAMPTZ
+            USING expires::timestamptz
         """)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS audit_log (
@@ -212,7 +218,7 @@ def init_db():
         """)
         cur.execute("CREATE INDEX IF NOT EXISTS audit_log_ts_idx ON audit_log (ts DESC)")
         # Vaxtı keçmiş və ya istifadə edilmiş tokenləri təmizlə
-        cur.execute("DELETE FROM reset_tokens WHERE used = TRUE OR expires < NOW()")
+        cur.execute("DELETE FROM reset_tokens WHERE used = TRUE OR expires::timestamptz < NOW()")
 
         cur.execute("SELECT 1 FROM users WHERE username = 'admin'")
         if not cur.fetchone():
@@ -783,7 +789,7 @@ def _send_password_reset_email(username: str, recipient_email: str) -> None:
     expires = datetime.now() + timedelta(hours=1)
     with db_conn() as conn:
         cur = conn.cursor()
-        cur.execute("DELETE FROM reset_tokens WHERE used = TRUE OR expires < NOW()")
+        cur.execute("DELETE FROM reset_tokens WHERE used = TRUE OR expires::timestamptz < NOW()")
         cur.execute(
             "INSERT INTO reset_tokens (token, username, expires, used) VALUES (%s,%s,%s,%s)",
             (token, username, expires, False)
@@ -854,7 +860,7 @@ def reset_password_page():
         return "<h2>❌ Keçərsiz link</h2><a href='/admin'>Admin Panelə qayıt</a>"
     if td['used']:
         return "<h2>❌ Artıq istifadə edilib</h2><a href='/admin'>Admin Panelə qayıt</a>"
-    if td['expires'] < datetime.now():
+    if td['expires'].replace(tzinfo=None) < datetime.now():
         return "<h2>⏰ Linkın vaxtı bitib</h2><a href='/admin'>Admin Panelə qayıt</a>"
 
     return redirect(f"/admin?reset_token={token}")
@@ -879,7 +885,7 @@ def api_reset_password():
             return jsonify({'error': 'Keçərsiz link'}), 400
         if td['used']:
             return jsonify({'error': 'Bu link artıq istifadə olunub'}), 400
-        if td['expires'] < datetime.now():
+        if td['expires'].replace(tzinfo=None) < datetime.now():
             return jsonify({'error': 'Linkın vaxtı bitib'}), 400
 
         cur.execute(
