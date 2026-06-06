@@ -1418,14 +1418,38 @@ function previewImage(input) {
       } else { showToast('❌ ' + (d.error||(interfaceLang==='en'?'Error':'Xəta'))); }
     }).catch(function(){ showToast(interfaceLang==='en'?'❌ Upload error':'❌ Yüklənmə xətası'); });
 }
-function saveItem() {
+async function saveItem() {
   var nameAz = document.getElementById('f-name-az').value.trim();
   if (!nameAz) { showToast(interfaceLang==='en'?'Name (AZ) is required':'Ad (AZ) tələb olunur'); return; }
+
   var existingImage = (editingItemIdx !== null && STATE.items[editingItemIdx]) ? (STATE.items[editingItemIdx].image || STATE.items[editingItemIdx].img || null) : null;
   var finalImage;
-  if (tempImageBase64) { finalImage = tempImageBase64; }
-  else if (itemImageDeleted) { finalImage = null; }
-  else { finalImage = existingImage; }
+
+  if (tempImageBase64 && tempImageBase64.startsWith('data:')) {
+    // Base64 → əvvəlcə Cloudinary-yə yüklə
+    var saveBtn = document.getElementById('item-drawer-save');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = interfaceLang==='en'?'Uploading...':'Yüklənir...'; }
+    try {
+      var blob = await fetch(tempImageBase64).then(function(r){ return r.blob(); });
+      var fd = new FormData(); fd.append('file', blob, 'item.jpg');
+      var up = await fetch('/api/upload', {method:'POST', body: fd});
+      var upData = await up.json();
+      if (!upData.ok) throw new Error(upData.error || 'Upload failed');
+      finalImage = upData.url;
+    } catch(e) {
+      showToast('❌ ' + (interfaceLang==='en'?'Image upload failed: ':'Şəkil yüklənmədi: ') + e.message);
+      var saveBtn2 = document.getElementById('item-drawer-save');
+      if (saveBtn2) { saveBtn2.disabled = false; saveBtn2.textContent = interfaceLang==='en'?'Save':'Yadda saxla'; }
+      return;
+    }
+  } else if (tempImageBase64) {
+    finalImage = tempImageBase64; // artıq Cloudinary URL-dir
+  } else if (itemImageDeleted) {
+    finalImage = null;
+  } else {
+    finalImage = existingImage;
+  }
+
   var item = {
     catId: document.getElementById('f-cat').value,
     nameAz: nameAz,
@@ -1440,6 +1464,8 @@ function saveItem() {
   if (editingItemIdx !== null) { STATE.items[editingItemIdx]=item; showToast(interfaceLang==='en'?'Item updated':'Məhsul yeniləndi'); }
   else { STATE.items.push(item); showToast(interfaceLang==='en'?'Item added':'Məhsul əlavə edildi'); }
   itemImageDeleted = false;
+  var saveBtn3 = document.getElementById('item-drawer-save');
+  if (saveBtn3) { saveBtn3.disabled = false; saveBtn3.textContent = interfaceLang==='en'?'Save':'Yadda saxla'; }
   saveData(); closeDrawerDirect('item-drawer'); renderMenuPage();
 }
 function clearItemImage() {
@@ -1495,14 +1521,29 @@ function editCat(idx) {
   }
   document.getElementById('cat-drawer').classList.add('open');
 }
-function saveCat() {
+async function saveCat() {
   var labelAz=document.getElementById('cf-label-az').value.trim();
   if (!labelAz) { showToast(interfaceLang==='en'?'Azerbaijani name is required':'Azərbaycanca ad tələb olunur'); return; }
   var existingCat = editingCatIdx !== null ? STATE.categories[editingCatIdx] : null;
   var id = existingCat ? existingCat.id : labelAz.toLowerCase().replace(/ə/g,'e').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ğ/g,'g').replace(/ş/g,'s').replace(/ç/g,'c').replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') + '-' + Date.now().toString(36);
-  // Şəkil məntiqi: yeni şəkil seçilibsə onu götür, silinibsə null, heç nə dəyişməyibsə köhnəni saxla
   var finalImage;
-  if (tempCatImage) {
+  if (tempCatImage && tempCatImage.startsWith('data:')) {
+    var saveBtn = document.getElementById('cat-drawer-save');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = interfaceLang==='en'?'Uploading...':'Yüklənir...'; }
+    try {
+      var blob = await fetch(tempCatImage).then(function(r){ return r.blob(); });
+      var fd = new FormData(); fd.append('file', blob, 'cat.jpg');
+      var up = await fetch('/api/upload', {method:'POST', body: fd});
+      var upData = await up.json();
+      if (!upData.ok) throw new Error(upData.error || 'Upload failed');
+      finalImage = upData.url;
+    } catch(e) {
+      showToast('❌ ' + (interfaceLang==='en'?'Image upload failed: ':'Şəkil yüklənmədi: ') + e.message);
+      var saveBtn2 = document.getElementById('cat-drawer-save');
+      if (saveBtn2) { saveBtn2.disabled = false; saveBtn2.textContent = interfaceLang==='en'?'Save':'Yadda saxla'; }
+      return;
+    }
+  } else if (tempCatImage) {
     finalImage = tempCatImage;
   } else if (catImageDeleted) {
     finalImage = null;
@@ -1519,6 +1560,8 @@ function saveCat() {
   if (editingCatIdx!==null) { STATE.categories[editingCatIdx]=cat; showToast(interfaceLang==='en'?'Category updated':'Kateqoriya yeniləndi'); }
   else { STATE.categories.push(cat); showToast(interfaceLang==='en'?'Category added':'Kateqoriya əlavə edildi'); }
   tempCatImage = null; catImageDeleted = false;
+  var saveBtn3 = document.getElementById('cat-drawer-save');
+  if (saveBtn3) { saveBtn3.disabled = false; saveBtn3.textContent = interfaceLang==='en'?'Save':'Yadda saxla'; }
   saveData(); closeDrawerDirect('cat-drawer'); renderCatsPage();
 }
 function clearCatImage() {
