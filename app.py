@@ -31,13 +31,16 @@ _login_attempts: dict = defaultdict(list)
 _LOGIN_MAX = 5
 _LOGIN_WINDOW = 300  # 5 dəqiqə
 
-def _check_login_rate(ip: str) -> bool:
+def _is_rate_limited(ip: str) -> bool:
     now = time.time()
     _login_attempts[ip] = [t for t in _login_attempts[ip] if now - t < _LOGIN_WINDOW]
-    if len(_login_attempts[ip]) >= _LOGIN_MAX:
-        return False
-    _login_attempts[ip].append(now)
-    return True
+    return len(_login_attempts[ip]) >= _LOGIN_MAX
+
+def _record_failed_attempt(ip: str) -> None:
+    _login_attempts[ip].append(time.time())
+
+def _clear_attempts(ip: str) -> None:
+    _login_attempts.pop(ip, None)
 
 # ── CLOUDINARY KONFİQURASİYASI ──
 cloudinary.config(
@@ -372,7 +375,7 @@ def admin():
 @app.route('/api/login', methods=['POST'])
 def api_login():
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-    if not _check_login_rate(ip):
+    if _is_rate_limited(ip):
         return jsonify({'ok': False, 'error': 'Çox sayda uğursuz cəhd. 5 dəqiqə gözləyin.'}), 429
 
     data = request.json or {}
@@ -385,8 +388,10 @@ def api_login():
         session.permanent = True
         session['user'] = username
         session['role'] = role
+        _clear_attempts(ip)
         log_action(username, 'login', {}, ip)
         return jsonify({'ok': True, 'username': username, 'role': role, 'must_change_password': must_change})
+    _record_failed_attempt(ip)
     log_action(username or '?', 'login_failed', {}, ip)
     return jsonify({'ok': False, 'error': 'İstifadəçi adı və ya şifrə yanlışdır'}), 401
 
