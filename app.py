@@ -965,7 +965,7 @@ def api_audit_log():
     user_filter = request.args.get('user', '').strip()
     with db_conn() as conn:
         cur = conn.cursor()
-        cur.execute("DELETE FROM audit_log WHERE ts < NOW() - INTERVAL '30 days'")
+        cur.execute("DELETE FROM audit_log WHERE ts < NOW() - INTERVAL '10 days'")
         if user_filter:
             cur.execute(
                 "SELECT * FROM audit_log WHERE username = %s ORDER BY ts DESC LIMIT %s",
