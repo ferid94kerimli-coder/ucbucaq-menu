@@ -442,11 +442,11 @@ input[type=file] { display:none; }
       <table class="items-table">
         <thead><tr>
           <th style="padding-left:1rem;width:28px"></th>
-          <th>Məhsul</th>
-          <th>Qiymət</th>
-          <th>Status</th>
-          <th>Kateqoriya</th>
-          <th style="padding-right:1rem">Əməliyyat</th>
+          <th data-i18n="col_product">Məhsul</th>
+          <th data-i18n="col_price">Qiymət</th>
+          <th data-i18n="col_status">Status</th>
+          <th data-i18n="col_category">Kateqoriya</th>
+          <th data-i18n="col_action" style="padding-right:1rem">Əməliyyat</th>
         </tr></thead>
         <tbody id="items-body"></tbody>
       </table>
@@ -1558,7 +1558,9 @@ function _drawAnalytics(data) {
   document.getElementById('stat-menu-opens').textContent = menuOpens.total || 0;
   document.getElementById('stat-total-clicks').textContent = totalClicks;
 
-  var topItem = clickEntries.length ? clickEntries[0][0] : '—';
+  var topItemKey = clickEntries.length ? clickEntries[0][0] : null;
+  var topItemObj = topItemKey ? STATE.items.find(function(i){ return i.nameAz===topItemKey || i.nameEn===topItemKey; }) : null;
+  var topItem = topItemKey ? (topItemObj ? (az ? topItemObj.nameAz : (topItemObj.nameEn || topItemObj.nameAz)) : topItemKey) : '—';
   document.getElementById('stat-top-item').textContent = topItem;
 
   var topCatId = Object.entries(catStats).sort(function(a,b){return b[1]-a[1];})[0];
