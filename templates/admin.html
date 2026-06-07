@@ -87,7 +87,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .nav-item { display:flex;align-items:center;gap:10px;padding:0.65rem 1.25rem;color:rgba(255,255,255,0.55);font-size:0.85rem;cursor:pointer;border-left:3px solid transparent;transition:all 0.15s;user-select:none; }
 .nav-item:hover { color:#fff;background:rgba(255,255,255,0.05); }
 .nav-item.active { color:#fff;border-left-color:var(--accent);background:rgba(232,98,42,0.12); }
-.nav-icon { font-size:1rem;width:20px;text-align:center; }
+.nav-icon { font-size:1rem;width:20px;min-width:20px;max-width:20px;flex-shrink:0;display:inline-flex;justify-content:center;align-items:center;overflow:visible; }
 .sidebar-bottom { margin-top:auto;padding:1rem 1.25rem 0;border-top:1px solid rgba(255,255,255,0.08); }
 .logout-btn { display:flex;align-items:center;gap:10px;padding:0.65rem 0;color:rgba(255,255,255,0.4);font-size:0.85rem;cursor:pointer;border:none;background:none;font-family:'DM Sans',sans-serif;width:100%;transition:color 0.15s;margin-top:8px; }
 .logout-btn:hover { color:#ef4444; }
