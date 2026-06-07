@@ -709,15 +709,7 @@ def api_add_user():
         _upsert_user_data(cur, username, copy.deepcopy(DEFAULT_MENU_DATA))
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     log_action(current_user(), 'add_user', {'username': username, 'role': role}, ip)
-    email_sent = False
-    if email and '@' in email:
-        try:
-            _send_password_reset_email(username, email)
-            email_sent = True
-        except Exception:
-            import traceback
-            print('[ADD USER RESET EMAIL ERROR]', traceback.format_exc())
-    return jsonify({'ok': True, 'email_sent': email_sent})
+    return jsonify({'ok': True})
 
 @app.route('/api/users/<username>', methods=['DELETE'])
 @superadmin_required
@@ -795,15 +787,7 @@ def api_update_user_email(username):
     with db_conn() as conn:
         cur = conn.cursor()
         cur.execute("UPDATE users SET email = %s WHERE username = %s", (email, username))
-    email_sent = False
-    if email and '@' in email:
-        try:
-            _send_password_reset_email(username, email)
-            email_sent = True
-        except Exception:
-            import traceback
-            print('[EMAIL UPDATE RESET ERROR]', traceback.format_exc())
-    return jsonify({'ok': True, 'email_sent': email_sent})
+    return jsonify({'ok': True})
 
 @app.route('/api/users/<username>/rename', methods=['PUT'])
 @superadmin_required
@@ -938,118 +922,6 @@ def api_clear_stats():
 # ŞİFRƏ SIFIRLAMA
 # ────────────────────────────────────────────────────────────────
 
-def _send_password_reset_email(username: str, recipient_email: str) -> None:
-    """Token yaradır, DB-yə yazır, reset emaili göndərir. Xəta olsa raise edir."""
-    token = secrets.token_urlsafe(32)
-    expires = datetime.now() + timedelta(hours=1)
-    with db_conn() as conn:
-        cur = conn.cursor()
-        cur.execute("DELETE FROM reset_tokens WHERE used = TRUE OR expires::timestamptz < NOW()")
-        cur.execute(
-            "INSERT INTO reset_tokens (token, username, expires, used) VALUES (%s,%s,%s,%s)",
-            (token, username, expires, False)
-        )
-    reset_link = APP_BASE_URL + '/reset-password?token=' + token
-    html_body = (
-        '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#FDF8F3;border-radius:16px">'
-        '<h2 style="color:#C9A84C">QR Menu Admin</h2>'
-        '<p>Salam <strong>' + username + '</strong>,</p>'
-        '<p>Şifrə sıfırlama sorğusu alındı. Aşağıdakı düyməyə basın:</p>'
-        '<p style="text-align:center;margin:28px 0">'
-        '<a href="' + reset_link + '" style="background:#C9A84C;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600">Şifrəni sıfırla</a>'
-        '</p>'
-        '<p style="color:#999;font-size:0.8rem">Bu link <strong>1 saat</strong> ərzində etibarlıdır.</p>'
-        '</div>'
-    )
-    msg = Message(
-        subject='QR Menu - Şifrə sıfırlama',
-        recipients=[recipient_email],
-        html=html_body,
-        body='Şifrə sıfırlama linki: ' + reset_link
-    )
-    mail.send(msg)
-
-@app.route('/api/forgot-password', methods=['POST'])
-def api_forgot_password():
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-    if _is_forgot_limited(ip):
-        return jsonify({'error': 'Çox sayda cəhd. 5 dəqiqə gözləyin.'}), 429
-
-    data = request.json or {}
-    username = data.get('username', '').strip()
-    if not username:
-        return jsonify({'error': 'İstifadəçi adı daxil edin'}), 400
-
-    with db_conn() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT username, email FROM users WHERE LOWER(username) = LOWER(%s)", (username,))
-        user = cur.fetchone()
-
-    if not user:
-        _record_forgot_attempt(ip)
-        return jsonify({'error': 'Bu istifadəçi adı tapılmadı'}), 400
-
-    recipient_email = (user['email'] or '').strip()
-    if not recipient_email or '@' not in recipient_email:
-        _record_forgot_attempt(ip)
-        return jsonify({'error': 'Bu istifadəçiyə email təyin edilməyib. Superadmin ilə əlaqə saxlayın.'}), 400
-
-    try:
-        _send_password_reset_email(user['username'], recipient_email)
-    except Exception as e:
-        import traceback
-        print('[FORGOT PASSWORD ERROR]', traceback.format_exc())
-        return jsonify({'error': 'Xəta: ' + str(e)}), 500
-
-    return jsonify({'ok': True, 'message': 'Şifrə sıfırlama linki emailinizə göndərildi'})
-
-@app.route('/reset-password')
-def reset_password_page():
-    token = request.args.get('token', '')
-    with db_conn() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM reset_tokens WHERE token = %s", (token,))
-        td = cur.fetchone()
-
-    if not td:
-        return "<h2>❌ Keçərsiz link</h2><a href='/admin'>Admin Panelə qayıt</a>"
-    if td['used']:
-        return "<h2>❌ Artıq istifadə edilib</h2><a href='/admin'>Admin Panelə qayıt</a>"
-    if td['expires'].replace(tzinfo=None) < datetime.now():
-        return "<h2>⏰ Linkın vaxtı bitib</h2><a href='/admin'>Admin Panelə qayıt</a>"
-
-    return redirect(f"/admin?reset_token={token}")
-
-@app.route('/api/reset-password', methods=['POST'])
-def api_reset_password():
-    data = request.json or {}
-    token = data.get('token', '').strip()
-    new_password = data.get('password', '')
-
-    if not token or not new_password:
-        return jsonify({'error': 'Token və yeni şifrə tələb olunur'}), 400
-    if len(new_password) < 6:
-        return jsonify({'error': 'Şifrə ən az 6 simvol olmalıdır'}), 400
-
-    with db_conn() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM reset_tokens WHERE token = %s", (token,))
-        td = cur.fetchone()
-
-        if not td:
-            return jsonify({'error': 'Keçərsiz link'}), 400
-        if td['used']:
-            return jsonify({'error': 'Bu link artıq istifadə olunub'}), 400
-        if td['expires'].replace(tzinfo=None) < datetime.now():
-            return jsonify({'error': 'Linkın vaxtı bitib'}), 400
-
-        cur.execute(
-            "UPDATE users SET password = %s, must_change_password = FALSE WHERE username = %s",
-            (generate_password_hash(new_password), td['username'])
-        )
-        cur.execute("UPDATE reset_tokens SET used = TRUE WHERE token = %s", (token,))
-
-    return jsonify({'ok': True, 'message': 'Şifrə uğurla yeniləndi'})
 
 # ────────────────────────────────────────────────────────────────
 # ONE-TIME: JSON MƏLUMATLARINI POSTGRESQL-Ə KÖÇ

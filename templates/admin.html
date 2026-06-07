@@ -320,37 +320,12 @@ input[type=file] { display:none; }
       </div>
       <div class="login-error" id="login-error"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">Daxil ol</button>
-      <button type="button" onclick="openForgotModal()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:0.75rem;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:4px;text-align:center;width:100%;padding:4px;transition:color 0.15s" onmouseover="this.style.color='rgba(255,255,255,0.75)'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">🔑 Şifrəmi unutdum</button>
     </div>
   </div>
 </div>
 
 
 
-<!-- ŞİFRƏ SIFIRLAMA MODAL -->
-<div id="forgot-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
-  <div style="background:#1C1917;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:2rem;width:360px;max-width:92vw;animation:loginSlideUp 0.3s ease both">
-    <div style="text-align:center;margin-bottom:1.5rem">
-      <div style="font-size:2rem;margin-bottom:8px">🔑</div>
-      <h3 style="color:#fff;font-family:'Playfair Display',serif;font-weight:600;margin:0 0 4px">Şifrəni sıfırla</h3>
-      <p style="color:rgba(255,255,255,0.4);font-size:0.78rem;margin:0">Email ünvanınıza sıfırlama linki göndəriləcək</p>
-    </div>
-    <div id="forgot-step1">
-      <div class="login-field" style="margin-bottom:12px">
-        <label style="font-size:0.72rem;font-weight:500;color:rgba(255,255,255,0.45);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:5px">İstifadəçi adı</label>
-        <input class="login-input" id="forgot-email" type="text" placeholder="istifadəçi adınız" onkeydown="if(event.key==='Enter')doForgotPassword()">
-      </div>
-      <div id="forgot-msg" style="font-size:0.78rem;text-align:center;min-height:1.2em;margin-bottom:8px"></div>
-      <button class="login-btn" id="forgot-btn" onclick="doForgotPassword()">Link göndər</button>
-      <button type="button" onclick="closeForgotModal()" style="background:none;border:none;color:rgba(255,255,255,0.35);font-size:0.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:10px;text-align:center;width:100%;padding:4px" onmouseover="this.style.color='rgba(255,255,255,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">Ləğv et</button>
-    </div>
-    <div id="forgot-step2" style="display:none;text-align:center">
-      <div style="font-size:2.5rem;margin-bottom:12px">📧</div>
-      <p style="color:rgba(255,255,255,0.8);font-size:0.88rem;line-height:1.6">Sıfırlama linki emailinizə göndərildi.<br><span style="color:rgba(255,255,255,0.45);font-size:0.78rem">Spam qutusunu da yoxlayın.</span></p>
-      <button class="login-btn" onclick="closeForgotModal()" style="margin-top:1rem">Bağla</button>
-    </div>
-  </div>
-</div>
 
 <!-- YENİ ŞİFRƏ MODAL (reset link ilə giriş zamanı) -->
 <div id="reset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
@@ -933,71 +908,10 @@ input[type=file] { display:none; }
 // ── AUTH ──
 var CREDENTIALS = { admin:'admin123', manager:'cafe2024' };
 
-// ── ŞİFRƏMİ UNUTDUM ──
-function openForgotModal() {
-  document.getElementById('forgot-email').value = '';
-  document.getElementById('forgot-msg').textContent = '';
-  document.getElementById('forgot-step1').style.display = '';
-  document.getElementById('forgot-step2').style.display = 'none';
-  document.getElementById('forgot-btn').disabled = false;
-  document.getElementById('forgot-btn').textContent = 'Link göndər';
-  var m = document.getElementById('forgot-modal');
-  m.style.display = 'flex';
-  setTimeout(function(){ document.getElementById('forgot-email').focus(); }, 150);
-}
-function closeForgotModal() {
-  document.getElementById('forgot-modal').style.display = 'none';
-}
-function doForgotPassword() {
-  var email = document.getElementById('forgot-email').value.trim();
-  var msgEl = document.getElementById('forgot-msg');
-  var btn   = document.getElementById('forgot-btn');
-  msgEl.style.color = '#fca5a5';
-  if (!email) { msgEl.textContent = 'İstifadəçi adı daxil edin'; return; }
-  btn.disabled = true; btn.textContent = '⏳ Göndərilir...';
-  fetch('/api/forgot-password', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({username: email})
-  }).then(function(r){
-    var status = r.status;
-    return r.text().then(function(text){
-      try { return {status: status, data: JSON.parse(text)}; }
-      catch(e) { return {status: status, data: {error: 'Server xətası (' + status + ')'}}; }
-    });
-  }).then(function(res){
-    var d = res.data;
-    if (d.ok) {
-      document.getElementById('forgot-step1').style.display = 'none';
-      document.getElementById('forgot-step2').style.display = '';
-    } else {
-      msgEl.textContent = d.error || ('Xəta: ' + res.status);
-      btn.disabled = false; btn.textContent = 'Link göndər';
-    }
-  }).catch(function(){
-    msgEl.textContent = 'Server ilə bağlantı xətası';
-    btn.disabled = false; btn.textContent = 'Link göndər';
-  });
-}
 
 // ── ŞİFRƏ SIFIRLAMA (token linki ilə) ──
 var RESET_TOKEN = null;
 var _forceChangePass = false;  // must_change_password flag-i ilə açılır
-function checkResetToken() {
-  var params = new URLSearchParams(window.location.search);
-  var token = params.get('reset_token');
-  if (!token) return;
-  RESET_TOKEN = token;
-  _forceChangePass = false;
-  document.getElementById('reset-pass1').value = '';
-  document.getElementById('reset-pass2').value = '';
-  document.getElementById('reset-msg').textContent = '';
-  document.getElementById('reset-btn').disabled = false;
-  document.getElementById('reset-btn').textContent = 'Şifrəni yenilə';
-  document.getElementById('reset-modal').style.display = 'flex';
-  // URL-dən token-i sil (görünməsin)
-  window.history.replaceState({}, document.title, '/admin');
-}
 function openForceChangeModal() {
   _forceChangePass = true;
   RESET_TOKEN = null;
@@ -3469,7 +3383,6 @@ function updateAdminThemeBtns() {
 })();
 
 checkSession();
-checkResetToken();
 // Apply saved language on load
 applyI18n(interfaceLang);
 </script>
