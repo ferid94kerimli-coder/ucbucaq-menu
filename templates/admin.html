@@ -433,6 +433,7 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
   </div>
   <nav>
     <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">&#128202;</span><span data-i18n="nav_dashboard">Dashboard</span></div>
+    <div class="nav-item superadmin-only" style="display:none" onclick="showPage('subscription',this)"><span class="nav-icon">💳</span><span>Abunəlik</span></div>
     <div class="nav-item superadmin-only" style="display:none" onclick="showPage('audit',this)"><span class="nav-icon">📋</span><span>Hərəkət jurnalı</span></div>
     <div class="nav-item manager-only" onclick="showPage('cafe',this)"><span class="nav-icon">&#127978;</span><span data-i18n="nav_cafe">Kafe məlumatı</span></div>
     <div class="nav-item manager-only" onclick="showPage('menu',this)"><span class="nav-icon">&#127869;</span><span data-i18n="nav_menu">Menyu</span></div>
@@ -894,6 +895,20 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ABUNƏLİK SƏHİFƏSİ -->
+  <div class="page" id="page-subscription">
+    <div class="page-header">
+      <h2 class="page-title">💳 Abunəlik</h2>
+      <button class="btn btn-outline" onclick="renderSubscriptionPage()" style="font-size:0.82rem">↻ Yenilə</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="items-table" id="sub-table">
+        <thead><tr><th>Restoran</th><th>Status</th><th>Bitiş tarixi</th><th>Qalan</th><th>Sürətli əlavə</th><th></th></tr></thead>
+        <tbody id="sub-table-body"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Yüklənir...</td></tr></tbody>
+      </table>
     </div>
   </div>
 
@@ -1377,6 +1392,74 @@ async function _saveSubscription(isoDate) {
   _renderSubInfo(data.sub_expires);
   showToast('✅ Abunəlik yeniləndi');
   renderSuperadminDashboard();
+}
+
+async function renderSubscriptionPage() {
+  var tbody = document.getElementById('sub-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Yüklənir...</td></tr>';
+  var list = _saRestaurantsData.length ? _saRestaurantsData : await fetch('/api/superadmin/stats').then(function(r){ return r.json(); }).then(function(d){ _saRestaurantsData = d.restaurants||[]; return _saRestaurantsData; }).catch(function(){ return []; });
+  tbody.innerHTML = '';
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Məlumat yoxdur</td></tr>';
+    return;
+  }
+  list.slice().sort(function(a,b){
+    var aExp = a.sub_expires ? new Date(a.sub_expires) : new Date('9999');
+    var bExp = b.sub_expires ? new Date(b.sub_expires) : new Date('9999');
+    return aExp - bExp;
+  }).forEach(function(r) {
+    var safeU = r.username.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    var now = new Date();
+    var statusHtml, expiresStr, daysHtml;
+    if (!r.sub_expires) {
+      statusHtml  = '<span style="color:#16a34a;font-size:0.75rem;font-weight:600">∞ Məhdudiyyətsiz</span>';
+      expiresStr  = '—';
+      daysHtml    = '—';
+    } else {
+      var exp  = new Date(r.sub_expires);
+      var days = Math.ceil((exp - now) / 86400000);
+      expiresStr = exp.toLocaleDateString('az-AZ', {day:'2-digit',month:'2-digit',year:'numeric'});
+      if (days > 14) {
+        statusHtml = '<span style="color:#16a34a;font-size:0.75rem;font-weight:600">✓ Aktiv</span>';
+        daysHtml   = '<span style="color:#16a34a;font-size:0.8rem">'+days+' gün</span>';
+      } else if (days > 0) {
+        statusHtml = '<span style="color:#f59e0b;font-size:0.75rem;font-weight:600">⚠ Tezliklə bitir</span>';
+        daysHtml   = '<span style="color:#f59e0b;font-size:0.8rem;font-weight:600">'+days+' gün</span>';
+      } else {
+        statusHtml = '<span style="color:#dc2626;font-size:0.75rem;font-weight:600">✕ Bitib</span>';
+        daysHtml   = '<span style="color:#dc2626;font-size:0.8rem">—</span>';
+      }
+    }
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td><button onclick="openRestaurantModal(\''+safeU+'\')" style="background:none;border:none;cursor:pointer;font-weight:600;color:var(--accent);font-size:0.85rem;padding:0;text-decoration:underline;text-underline-offset:2px">'+r.username+'</button><div style="font-size:0.75rem;color:var(--muted)">'+(r.name||'')+'</div></td>'
+      +'<td>'+statusHtml+'</td>'
+      +'<td style="font-size:0.82rem;color:var(--text)">'+expiresStr+'</td>'
+      +'<td>'+daysHtml+'</td>'
+      +'<td style="white-space:nowrap">'
+        +'<button onclick="subQuickAdd(\''+safeU+'\',1)" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:2px 7px;margin-right:3px">+1 ay</button>'
+        +'<button onclick="subQuickAdd(\''+safeU+'\',3)" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:2px 7px;margin-right:3px">+3 ay</button>'
+        +'<button onclick="subQuickAdd(\''+safeU+'\',12)" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:2px 7px">+1 il</button>'
+      +'</td>'
+      +'<td><button onclick="openRestaurantModal(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:2px 7px">✏ İdarə et</button></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+async function subQuickAdd(username, months) {
+  var r = _saRestaurantsData.find(function(x){ return x.username === username; });
+  if (!r) return;
+  var base = (r.sub_expires && new Date(r.sub_expires) > new Date()) ? new Date(r.sub_expires) : new Date();
+  base.setMonth(base.getMonth() + months);
+  var res = await fetch('/api/superadmin/users/' + encodeURIComponent(username) + '/set-subscription', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({expires: base.toISOString()})
+  });
+  var data = await res.json();
+  if (!data.ok) { showToast('❌ ' + (data.error||'Xəta')); return; }
+  r.sub_expires = data.sub_expires;
+  showToast('✅ ' + username + ' — abunəlik yeniləndi');
+  renderSubscriptionPage();
 }
 
 function addSubscriptionCustom(unit) {
@@ -3626,7 +3709,8 @@ function showPage(id, el) {
   if (id === 'theme')      renderThemePage();
   if (id === 'analytics')  renderAnalytics();
   if (id === 'print')      renderPrintPage();
-  if (id === 'audit')      renderAuditLog();
+  if (id === 'subscription') renderSubscriptionPage();
+  if (id === 'audit')        renderAuditLog();
   if (id === 'settings')   { renderSettingsPage(); setTimeout(updateAdminThemeBtns, 50); }
   if (id === 'qr')         { setTimeout(function(){ generateQRCode(getMyMenuUrl()); }, 100); }
 }
@@ -3687,6 +3771,9 @@ applyI18n(interfaceLang);
   <div class="mobile-nav-inner">
     <button class="mob-nav-btn active" id="mobnav-dashboard" onclick="showPage('dashboard',this);updateMobNav('dashboard')">
       <span class="mob-icon">📊</span><span>Ana səhifə</span>
+    </button>
+    <button class="mob-nav-btn superadmin-only" id="mobnav-subscription" style="display:none" onclick="showPage('subscription',this);updateMobNav('subscription')">
+      <span class="mob-icon">💳</span><span>Abunəlik</span>
     </button>
     <button class="mob-nav-btn superadmin-only" id="mobnav-audit" style="display:none" onclick="showPage('audit',this);updateMobNav('audit')">
       <span class="mob-icon">📋</span><span>Jurnal</span>
