@@ -893,7 +893,6 @@ input[type=file] { display:none; }
     <div class="form-grid">
       <div class="form-group"><label>İstifadəçi adı</label><input type="text" id="u-username" placeholder="manager"></div>
       <div class="form-group"><label>Rol</label><select id="u-role"><option value="admin">Admin</option><option value="manager">Manager</option></select></div>
-      <div class="form-group full"><label>Email (şifrə sıfırlama üçün)</label><input type="email" id="u-email" placeholder="user@gmail.com"></div>
       <div class="form-group"><label>Şifrə</label><input type="password" id="u-pass" placeholder="••••••••"></div>
       <div class="form-group"><label>Şifrə (təkrar)</label><input type="password" id="u-pass2" placeholder="••••••••"></div>
     </div>
@@ -3106,7 +3105,6 @@ function openAddUser() {
   document.getElementById('u-pass').value = '';
   document.getElementById('u-pass2').value = '';
   document.getElementById('u-role').value = 'admin';
-  document.getElementById('u-email').value = '';
   document.getElementById('user-drawer').classList.add('open');
 }
 
@@ -3119,7 +3117,6 @@ function openEditUser(key) {
   document.getElementById('u-pass2').value = '';
   fetch('/api/users/' + key + '/info').then(function(r){ return r.json(); }).then(function(d){
     document.getElementById('u-role').value = d.role || 'admin';
-    document.getElementById('u-email').value = d.email || '';
   });
   document.getElementById('user-drawer').classList.add('open');
 }
@@ -3147,17 +3144,6 @@ function saveUser() {
         if (d.ok) showToast(interfaceLang==='en'?'User updated':'İstifadəçi yeniləndi');
         else showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
       });
-      // Emaili yenilə
-      var emailVal = (document.getElementById('u-email') || {}).value;
-      if (emailVal !== undefined) {
-        fetch('/api/users/' + targetKey + '/email', {
-          method: 'PUT',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({email: emailVal.trim()})
-        }).then(function(r){ return r.json(); }).then(function(d){
-          if (d.ok && d.email_sent) showToast(interfaceLang==='en'?'📧 Reset link sent to new email':'📧 Yeni emailə sıfırlama linki göndərildi');
-        });
-      }
       // Şifrə dəyişilibsə onu da yenilə
       if (pass) {
         fetch('/api/users/' + targetKey + '/set-password', {
@@ -3185,7 +3171,7 @@ function saveUser() {
     fetch('/api/users', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({username: username, password: pass, role: role, email: document.getElementById('u-email').value.trim()})
+      body: JSON.stringify({username: username, password: pass, role: role})
     }).then(function(r){ return r.json(); }).then(function(d){
       if (d.ok) {
         var msg = interfaceLang==='en'?'✅ User added':'✅ İstifadəçi əlavə edildi';
