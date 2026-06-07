@@ -90,10 +90,20 @@ def _push_to_cf_worker(username: str, html: str) -> None:
 
 def _push_static_menu_async(username: str) -> None:
     try:
-        cached = _get_cached_data(username)
-        if cached is None:
+        # Cache-dən yox, birbaşa DB-dən oxu (save sonrası cache boş olur)
+        data = None
+        try:
+            with db_conn() as conn:
+                cur = conn.cursor()
+                cur.execute("SELECT data FROM user_data WHERE username = %s", (username,))
+                row = cur.fetchone()
+                if row:
+                    data = row['data']
+        except Exception:
+            pass
+        if data is None:
             return
-        pub = {k: cached[k] for k in ('cafe', 'categories', 'items', 'theme') if k in cached}
+        pub = {k: data[k] for k in ('cafe', 'categories', 'items', 'theme') if k in data}
         def _strip_b64(obj):
             if isinstance(obj, dict):
                 return {k: ('' if isinstance(v, str) and v.startswith('data:') else _strip_b64(v))
