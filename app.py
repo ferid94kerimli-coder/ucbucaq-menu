@@ -1141,6 +1141,30 @@ def api_export_data():
     resp.headers['Content-Disposition'] = f'attachment; filename="{username}-menu-export.json"'
     return resp
 
+@app.route('/api/data/import', methods=['POST'])
+@login_required
+def api_import_data():
+    username = current_user()
+    incoming = request.json
+    if not isinstance(incoming, dict):
+        return jsonify({'ok': False, 'error': 'Yanlış format'}), 400
+    allowed_keys = {'cafe', 'categories', 'items', 'theme'}
+    data = {k: incoming[k] for k in allowed_keys if k in incoming}
+    if not data:
+        return jsonify({'ok': False, 'error': 'Məlumat tapılmadı'}), 400
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT data FROM user_data WHERE username = %s FOR UPDATE", (username,))
+        row = cur.fetchone()
+        db = row['data'] if row else copy.deepcopy(DEFAULT_MENU_DATA)
+        db.update(data)
+        _upsert_user_data(cur, username, db)
+    _invalidate_cache(username)
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    log_action(username, 'import', {'keys': list(data.keys())}, ip)
+    threading.Thread(target=_push_static_menu_async, args=(username,), daemon=True).start()
+    return jsonify({'ok': True})
+
 @app.route('/api/admin/export/<target_username>')
 @superadmin_required
 def api_admin_export_data(target_username):

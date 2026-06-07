@@ -703,12 +703,21 @@ input[type=file] { display:none; }
       </div>
 
       <!-- EHTİYAT NÜSXƏ -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1.25rem;border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-size:0.85rem;font-weight:500;color:var(--text)" data-i18n="backup">💾 Ehtiyat nüsxə</div>
-          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px" data-i18n="backupNote">Bütün menyu məlumatlarını JSON kimi yüklə</div>
+      <div style="padding:0.85rem 1.25rem;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem">
+          <div>
+            <div style="font-size:0.85rem;font-weight:500;color:var(--text)" data-i18n="backup">💾 Ehtiyat nüsxə</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:2px" data-i18n="backupNote">Bütün menyu məlumatlarını JSON kimi yüklə</div>
+          </div>
+          <a href="/api/data/export" download class="btn btn-sm btn-ghost" style="border:2px solid var(--border);text-decoration:none;color:var(--text)" data-i18n="backupDownload">⬇️ Yüklə</a>
         </div>
-        <a href="/api/data/export" download class="btn btn-sm btn-ghost" style="border:2px solid var(--border);text-decoration:none;color:var(--text)" data-i18n="backupDownload">⬇️ Yüklə</a>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label for="backup-restore-file" style="display:inline-flex;align-items:center;gap:6px;padding:0.4rem 0.85rem;background:var(--bg);border:2px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.8rem;color:var(--text);font-weight:500">
+            ⬆️ <span data-i18n="backupRestore">Bərpa et</span>
+          </label>
+          <input type="file" id="backup-restore-file" accept=".json" style="display:none" onchange="restoreBackup(this)">
+          <span style="font-size:0.72rem;color:var(--muted)" data-i18n="backupRestoreNote">JSON faylı seçin</span>
+        </div>
       </div>
 
       <!-- ŞİFRƏ DƏYİŞ -->
@@ -1243,6 +1252,44 @@ function adminUploadLogo(input) {
         showToast(interfaceLang==='en'?'✅ Logo saved':'✅ Loqo yadda saxlandı');
       } else { showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta'))); }
     }).catch(function(){ showToast(interfaceLang==='en'?'❌ Upload error':'❌ Yüklənmə xətası'); });
+}
+function restoreBackup(input) {
+  if (!input || !input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var data;
+    try { data = JSON.parse(e.target.result); } catch(err) {
+      showToast(interfaceLang==='en' ? '❌ Invalid JSON file' : '❌ Yanlış JSON faylı');
+      return;
+    }
+    showConfirm(
+      interfaceLang==='en' ? 'Restore Backup' : 'Ehtiyat nüsxədən bərpa',
+      interfaceLang==='en'
+        ? 'Current menu data will be replaced with the backup. Continue?'
+        : 'Cari menyu məlumatları backup ilə əvəz ediləcək. Davam edirsiniz?',
+      function() {
+        showToast(interfaceLang==='en' ? '⏳ Restoring...' : '⏳ Bərpa edilir...');
+        fetch('/api/data/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.ok) {
+            showToast(interfaceLang==='en' ? '✅ Backup restored! Reloading...' : '✅ Bərpa edildi! Yenilənir...');
+            setTimeout(function() { window.location.reload(); }, 1500);
+          } else {
+            showToast('❌ ' + (d.error || 'Error'));
+          }
+        })
+        .catch(function() { showToast(interfaceLang==='en' ? '❌ Restore failed' : '❌ Bərpa uğursuz oldu'); });
+      }, '💾'
+    );
+  };
+  reader.readAsText(file);
+  input.value = '';
 }
 function adminDeleteLogo() {
   showConfirm(interfaceLang==='en'?'Remove Logo':'Loqonu sil', interfaceLang==='en'?'Logo will be removed from the menu page.':'Loqo silinəcək və menyu səhifəsindən yox olacaq.', function(){
@@ -2416,6 +2463,8 @@ var I18N = {
     backup: '💾 Ehtiyat nüsxə',
     backupNote: 'Bütün menyu məlumatlarını JSON kimi yüklə',
     backupDownload: '⬇️ Yüklə',
+    backupRestore: 'Bərpa et',
+    backupRestoreNote: 'JSON faylı seçin',
     auditLog: '📋 Hərəkət jurnalı',
     auditLogNote: 'Son 10 gündəki dəyişikliklər',
     auditAllUsers: 'Hamısı',
@@ -2582,6 +2631,8 @@ var I18N = {
     backup: '💾 Backup',
     backupNote: 'Download all menu data as JSON',
     backupDownload: '⬇️ Download',
+    backupRestore: 'Restore',
+    backupRestoreNote: 'Select JSON file',
     auditLog: '📋 Activity Log',
     auditLogNote: 'Changes in the last 10 days',
     auditAllUsers: 'All users',
