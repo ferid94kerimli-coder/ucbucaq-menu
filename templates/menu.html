@@ -995,7 +995,7 @@ function openModal(item) {
   iconWrap.style.background = bg;
   const _img = item.image || item.img || '';
   if (_img) {
-    iconWrap.innerHTML = `<img src="${clUrl(_img,'w_600,h_600,c_fill,q_auto,f_auto')}" style="width:100%;height:100%;object-fit:cover;border-radius:16px">`;
+    iconWrap.innerHTML = `<img src="${clUrl(_img,'w_600,q_auto,f_auto')}" style="width:100%;height:100%;object-fit:cover;border-radius:16px">`;
   } else {
     iconWrap.textContent = (item.icon && item.icon !== 'undefined') ? item.icon : '🍽️';
   }
@@ -1115,7 +1115,7 @@ function render() {
     btn.className = 'cat-btn' + (activeCat === cat.id ? ' active' : '');
     const catLabel = lang === 'az' ? cat.labelAz : (cat.labelEn || cat.labelAz);
     if (cat.image) {
-      btn.innerHTML = `<img src="${clUrl(cat.image,'w_40,h_40,c_fill,q_auto,f_auto')}" style="width:16px;height:16px;border-radius:3px;object-fit:cover;margin-right:5px;vertical-align:middle">${catLabel}`;
+      btn.innerHTML = `<img src="${clUrl(cat.image,'w_40,q_auto,f_auto')}" style="width:16px;height:16px;border-radius:3px;object-fit:cover;margin-right:5px;vertical-align:middle">${catLabel}`;
     } else if (cat.icon) {
       btn.innerHTML = `<span style="margin-right:4px">${cat.icon}</span>${catLabel}`;
     } else {
@@ -1147,7 +1147,7 @@ function render() {
       const desc = lang === 'az' ? (item.ingredientsAz || item.ingredients || '') : (item.ingredientsEn || item.ingredientsAz || item.ingredients || '');
       const _itemImg1 = item.image || item.img || '';
       const iconHtml = _itemImg1
-        ? `<img src="${clUrl(_itemImg1,'w_400,h_400,c_fill,q_auto,f_auto')}" loading="lazy" style="width:50px;height:50px;border-radius:12px;object-fit:cover;flex-shrink:0">`
+        ? `<img src="${clUrl(_itemImg1,'w_200,q_auto,f_auto')}" loading="lazy" style="width:50px;height:50px;border-radius:12px;object-fit:cover;flex-shrink:0">`
         : `<div class="item-icon" style="background:${cat.bg}">${(item.icon && item.icon !== 'undefined') ? item.icon : '🍽️'}</div>`;
       const card = document.createElement('div');
       card.className = 'item-card';
@@ -1238,7 +1238,7 @@ function renderSearch() {
 
       const _itemImg2 = item.image || item.img || '';
       const iconHtml = _itemImg2
-        ? `<img src="${clUrl(_itemImg2,'w_400,h_400,c_fill,q_auto,f_auto')}" loading="lazy" style="width:50px;height:50px;border-radius:12px;object-fit:cover;flex-shrink:0">`
+        ? `<img src="${clUrl(_itemImg2,'w_200,q_auto,f_auto')}" loading="lazy" style="width:50px;height:50px;border-radius:12px;object-fit:cover;flex-shrink:0">`
         : `<div class="item-icon" style="background:${cat.bg}">${(item.icon && item.icon !== 'undefined') ? item.icon : '🍽️'}</div>`;
       const card = document.createElement('div');
       card.className = 'item-card';
@@ -1287,7 +1287,7 @@ function loadLogo() {
   const wrap = document.getElementById('logo-wrap');
   if (!wrap) return;
   if (url) {
-    wrap.innerHTML = '<img src="' + clUrl(url,'w_200,h_200,c_fill,q_auto,f_auto') + '" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:18px">';
+    wrap.innerHTML = '<img src="' + clUrl(url,'w_200,q_auto,f_auto') + '" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:18px">';
   } else {
     wrap.innerHTML = '<div class="header-logo-placeholder"><span>🏪</span></div>';
   }
@@ -1491,7 +1491,7 @@ function renderCartItems() {
     const cat = (STATE && STATE.categories || []).find(c => c.id === item.catId) || {};
     const img = item.image || item.img || '';
     const iconHtml = img
-      ? `<div class="cart-item-icon"><img src="${clUrl(img,'w_120,h_120,c_fill,q_auto,f_auto')}" alt="" loading="lazy"></div>`
+      ? `<div class="cart-item-icon"><img src="${clUrl(img,'w_120,q_auto,f_auto')}" alt="" loading="lazy"></div>`
       : `<div class="cart-item-icon" style="background:${cat.bg||'#FFF3E0'}">${(item.icon && item.icon !== 'undefined') ? item.icon : '🍽️'}</div>`;
     const name = lang === 'az' ? item.nameAz : (item.nameEn || item.nameAz);
     const linePrice = (parseFloat(item.price || 0) * row.qty).toFixed(2);
@@ -1565,8 +1565,10 @@ function cartOverlayClick(e) {
   });
 })();
 
-if ('serviceWorker' in navigator && '{{ menu_user }}') {
-  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
 }
 </script>
 </body>
