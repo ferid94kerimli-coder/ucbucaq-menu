@@ -1893,10 +1893,19 @@ function _drawAnalytics(data) {
 }
 
 function clearStats() {
-  fetch('/api/stats', {method:'DELETE'}).then(function(){
-    renderAnalytics();
-    showToast(interfaceLang==='en'?'Statistics reset':'Statistika sıfırlandı');
-  });
+  var az = interfaceLang !== 'en';
+  showConfirm(
+    az ? 'Statistikanı sıfırla' : 'Reset Statistics',
+    az ? 'Bütün baxış və klik statistikası silinəcək. Bu əməliyyat geri qaytarıla bilməz.' : 'All view and click statistics will be deleted. This action cannot be undone.',
+    function() {
+      fetch('/api/stats', {method:'DELETE'}).then(function(){
+        renderAnalytics();
+        showToast(az ? 'Statistika sıfırlandı' : 'Statistics reset');
+      });
+    },
+    '📊',
+    az ? 'Sıfırla' : 'Reset'
+  );
 }
 
 // ── PRINT ──
