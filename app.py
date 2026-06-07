@@ -3,7 +3,7 @@ from flask_compress import Compress
 from functools import wraps
 import contextlib, copy, json, os, uuid, secrets, time, base64, threading
 import urllib.request as _urllib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -283,6 +283,9 @@ def init_db():
             ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE
         """)
         cur.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS sub_expires TIMESTAMPTZ DEFAULT NULL
+        """)
+        cur.execute("""
             CREATE TABLE IF NOT EXISTS user_data (
                 username TEXT PRIMARY KEY REFERENCES users(username) ON DELETE CASCADE,
                 data     JSONB NOT NULL DEFAULT '{}'
@@ -343,14 +346,15 @@ def load_users():
         return cached
     with db_conn() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT username, password, role, email, must_change_password, is_active FROM users")
+        cur.execute("SELECT username, password, role, email, must_change_password, is_active, sub_expires FROM users")
         rows = cur.fetchall()
     users = {r['username']: {
         'password': r['password'],
         'role': r['role'],
         'email': r['email'] or '',
         'must_change_password': r['must_change_password'],
-        'is_active': r['is_active']
+        'is_active': r['is_active'],
+        'sub_expires': r['sub_expires']
     } for r in rows}
     _set_cached_users(users)
     return users
@@ -600,6 +604,13 @@ def api_get_data():
 @login_required
 def api_save_data():
     username = current_user()
+    role = session.get('role', 'manager')
+    # Superadmin üçün abunəlik yoxlanmır
+    if role != 'superadmin':
+        users = load_users()
+        sub_expires = users.get(username, {}).get('sub_expires')
+        if sub_expires and sub_expires < datetime.now(timezone.utc):
+            return jsonify({'error': 'Abunəlik bitib', 'code': 'sub_expired'}), 402
     incoming = request.json or {}
     allowed_keys = {'cafe', 'categories', 'items', 'theme'}
     with db_conn() as conn:
@@ -1108,6 +1119,7 @@ def api_superadmin_stats():
         cur.execute("""
             SELECT u.username,
                    u.is_active,
+                   u.sub_expires,
                    COALESCE(ud.data->'cafe'->>'nameAz', u.username) AS name,
                    COALESCE((ud.data->'stats'->'opens'->>'total')::int, 0) AS opens,
                    ud.data->'stats'->'clicks' AS clicks,
@@ -1116,7 +1128,7 @@ def api_superadmin_stats():
             FROM users u
             LEFT JOIN user_data ud ON u.username = ud.username
             LEFT JOIN audit_log al ON u.username = al.username
-            GROUP BY u.username, u.is_active, name, opens, clicks, cats
+            GROUP BY u.username, u.is_active, u.sub_expires, name, opens, clicks, cats
             ORDER BY opens DESC
         """)
         rows = cur.fetchall()
@@ -1130,6 +1142,7 @@ def api_superadmin_stats():
             'name': r['name'],
             'opens': r['opens'],
             'is_active': r['is_active'],
+            'sub_expires': r['sub_expires'].isoformat() if r['sub_expires'] else None,
             'last_active': r['last_active'].isoformat() if r['last_active'] else None,
             'totalClicks': sum(int(v) for v in clicks.values()),
             'topItems': sorted(clicks.items(), key=lambda x: -int(x[1]))[:5],
@@ -1160,6 +1173,30 @@ p{{color:#888;font-size:.9rem}}
 <h1>Müvəqqəti bağlıdır</h1>
 <p>Bu restoran hal-hazırda aktiv deyil.</p>
 </div></body></html>"""
+
+@app.route('/api/superadmin/users/<username>/set-subscription', methods=['POST'])
+@superadmin_required
+def api_set_subscription(username):
+    users = load_users()
+    if username not in users:
+        return jsonify({'error': 'İstifadəçi tapılmadı'}), 404
+    data = request.json or {}
+    expires_str = data.get('expires')  # ISO string or null
+    if expires_str:
+        try:
+            expires = datetime.fromisoformat(expires_str.replace('Z', '+00:00'))
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
+        except ValueError:
+            return jsonify({'error': 'Yanlış tarix formatı'}), 400
+    else:
+        expires = None
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET sub_expires=%s WHERE username=%s", (expires, username))
+    _invalidate_users_cache()
+    log_action(current_user(), 'set_subscription', {'target': username, 'expires': expires_str}, request.remote_addr)
+    return jsonify({'ok': True, 'sub_expires': expires.isoformat() if expires else None})
 
 @app.route('/api/superadmin/users/<username>/set-active', methods=['POST'])
 @superadmin_required
