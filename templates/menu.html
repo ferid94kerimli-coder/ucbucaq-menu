@@ -777,6 +777,7 @@
     <h1 id="cafe-name"></h1>
     <p id="cafe-sub"></p>
     <div id="social-bar" style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap;position:relative;z-index:1"></div>
+    <div id="wifi-bar" style="display:none;margin-top:8px;position:relative;z-index:1"></div>
     <div id="hours-badge" style="display:none;margin-top:10px;position:relative;z-index:1"></div>
   </div>
 
@@ -1098,6 +1099,36 @@ function render() {
   }
   if (cafe.maps) {
     socialBar.innerHTML += `<a href="${cafe.maps}" target="_blank" style="${iconBtn}" title="${lang==='az'?'Xəritə':'Map'}">${mapSVG}</a>`;
+  }
+
+  // WiFi bar
+  const wifiBar = document.getElementById('wifi-bar');
+  wifiBar.innerHTML = '';
+  if (cafe.wifi) {
+    wifiBar.style.display = 'flex';
+    const copyLabel = lang === 'az' ? 'Kopyala' : 'Copy';
+    const pill = document.createElement('div');
+    pill.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;backdrop-filter:blur(6px);background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:0.78rem;user-select:none';
+    const wifiSvgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(wifiSvgNS,'svg');
+    svg.setAttribute('width','14'); svg.setAttribute('height','14'); svg.setAttribute('viewBox','0 0 24 24');
+    svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2.2');
+    svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
+    svg.innerHTML = '<path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>';
+    const lbl = document.createElement('span'); lbl.style.opacity='0.75'; lbl.textContent='WiFi:';
+    const pw = document.createElement('span'); pw.style.cssText='font-weight:600;letter-spacing:0.4px'; pw.textContent=cafe.wifi;
+    const cpBtn = document.createElement('span');
+    cpBtn.style.cssText='opacity:0.6;font-size:0.72rem;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,0.15)';
+    cpBtn.textContent = copyLabel;
+    pill.appendChild(svg); pill.appendChild(lbl); pill.appendChild(pw); pill.appendChild(cpBtn);
+    pill.onclick = function() {
+      if (navigator.clipboard) navigator.clipboard.writeText(cafe.wifi);
+      cpBtn.textContent = '✓';
+      setTimeout(function(){ cpBtn.textContent = copyLabel; }, 1500);
+    };
+    wifiBar.appendChild(pill);
+  } else {
+    wifiBar.style.display = 'none';
   }
 
   // Hours badge

@@ -550,6 +550,14 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
           </div>
           <span data-i18n="mapsHint" style="font-size:0.7rem;color:var(--muted)">Google Maps-dan "Linki kopyala" ilə alın</span>
         </div>
+        <div class="form-group">
+          <label data-i18n="wifiPassword">WiFi şifrəsi</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:1rem">📶</span>
+            <input type="text" id="cafe-wifi" placeholder="MyWifi123" style="padding-left:2.2rem">
+          </div>
+          <span data-i18n="wifiHint" style="font-size:0.7rem;color:var(--muted)">Menyuda sosial ikonların altında görünəcək</span>
+        </div>
       </div>
 
 
@@ -1455,6 +1463,7 @@ function loadCafeForm() {
   document.getElementById('cafe-instagram').value = c.instagram || '';
   document.getElementById('cafe-tiktok').value    = c.tiktok    || '';
   document.getElementById('cafe-maps').value      = c.maps      || '';
+  document.getElementById('cafe-wifi').value      = c.wifi      || '';
   var sfEl = document.getElementById('cafe-service-fee'); if (sfEl) sfEl.value = (c.serviceFee !== undefined && c.serviceFee !== null) ? c.serviceFee : 7;
   adminLoadLogo();
   renderSocialPreview();
@@ -1536,6 +1545,7 @@ function saveIntegration() {
     instagram: document.getElementById('cafe-instagram').value.trim().replace('@',''),
     tiktok:    document.getElementById('cafe-tiktok').value.trim().replace('@',''),
     maps:      document.getElementById('cafe-maps').value.trim(),
+    wifi:      document.getElementById('cafe-wifi').value.trim(),
   });
   saveData();
   renderSocialPreview();
@@ -2722,6 +2732,8 @@ var I18N = {
     tiktokHint: '@ işarəsiz istifadəçi adı',
     mapsLink: 'Google Maps linki',
     mapsHint: 'Google Maps-dan "Linki kopyala" ilə alın',
+    wifiPassword: 'WiFi şifrəsi',
+    wifiHint: 'Menyuda sosial ikonların altında görünəcək',
     // Print
     printCat: 'Kateqoriya',
     printLang: 'Dil',
@@ -2917,6 +2929,8 @@ var I18N = {
     tiktokHint: 'Username without @ symbol',
     mapsLink: 'Google Maps link',
     mapsHint: 'Use "Copy link" from Google Maps',
+    wifiPassword: 'WiFi Password',
+    wifiHint: 'Shown below social icons on the menu',
     // Print
     printCat: 'Category',
     printLang: 'Language',
