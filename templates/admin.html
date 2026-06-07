@@ -314,30 +314,6 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
       <div class="stat-card" style="padding:0.75rem 1rem"><div class="stat-label" style="font-size:0.7rem">Kliklər</div><div id="rm-clicks" style="font-size:1.2rem;font-weight:700;color:var(--text)"></div></div>
       <div class="stat-card" style="padding:0.75rem 1rem"><div class="stat-label" style="font-size:0.7rem">Son fəaliyyət</div><div id="rm-last-active" style="font-size:0.78rem;font-weight:500;color:var(--text);margin-top:2px"></div></div>
     </div>
-    <!-- Abunəlik -->
-    <div style="margin-bottom:1.25rem;padding:1rem;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
-        <div style="font-size:0.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px">Abunəlik</div>
-        <div id="rm-sub-badge"></div>
-      </div>
-      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">Cari bitiş: <strong id="rm-sub-expires" style="color:var(--text)"></strong></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-        <button onclick="addSubscriptionMonths(1)"  class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem">+1 ay</button>
-        <button onclick="addSubscriptionMonths(3)"  class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem">+3 ay</button>
-        <button onclick="addSubscriptionMonths(6)"  class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem">+6 ay</button>
-        <button onclick="addSubscriptionMonths(12)" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem">+1 il</button>
-        <button onclick="clearSubscription()"       class="btn btn-sm btn-ghost" style="border:1px solid #dc2626;color:#dc2626;font-size:0.75rem">Sil</button>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-        <input type="number" id="rm-sub-amount-input" min="1" max="520" placeholder="say" style="font-size:0.8rem;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);width:72px">
-        <button onclick="addSubscriptionCustom('month')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem">ay əlavə et</button>
-        <button onclick="addSubscriptionCustom('week')"  class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem">həftə əlavə et</button>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <input type="date" id="rm-sub-date-input" style="font-size:0.8rem;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);flex:1">
-        <button onclick="setCustomSubscription()" class="btn btn-sm btn-primary" style="font-size:0.75rem;white-space:nowrap">Təyin et</button>
-      </div>
-    </div>
     <div style="margin-bottom:1.1rem">
       <div style="font-size:0.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:0.65rem">Ən çox baxılan məhsullar</div>
       <div id="rm-top-items"></div>
@@ -1317,9 +1293,6 @@ function openRestaurantModal(username) {
   document.getElementById('rm-opens').textContent = r.opens || 0;
   document.getElementById('rm-clicks').textContent = r.totalClicks || 0;
   document.getElementById('rm-last-active').textContent = r.last_active ? auditTimeAgo(r.last_active) : '—';
-
-  // Abunəlik
-  _renderSubInfo(r.sub_expires);
 
   function barList(items, color) {
     if (!items || !items.length) return '<p style="color:var(--muted);font-size:0.82rem;margin:0">Məlumat yoxdur</p>';
