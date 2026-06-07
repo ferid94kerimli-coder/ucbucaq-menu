@@ -373,6 +373,7 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
   </div>
   <nav>
     <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">&#128202;</span><span data-i18n="nav_dashboard">Dashboard</span></div>
+    <div class="nav-item superadmin-only" style="display:none" onclick="showPage('audit',this)"><span class="nav-icon">📋</span><span>Hərəkət jurnalı</span></div>
     <div class="nav-item manager-only" onclick="showPage('cafe',this)"><span class="nav-icon">&#127978;</span><span data-i18n="nav_cafe">Kafe məlumatı</span></div>
     <div class="nav-item manager-only" onclick="showPage('menu',this)"><span class="nav-icon">&#127869;</span><span data-i18n="nav_menu">Menyu</span></div>
     <div class="nav-item manager-only" onclick="showPage('categories',this)"><span class="nav-icon">&#128194;</span><span data-i18n="nav_categories">Kateqoriyalar</span></div>
@@ -784,23 +785,6 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
         <div id="users-list" style="padding:0 1.25rem 1rem"></div>
       </div>
 
-      <!-- AUDİT LOG (superadmin) -->
-      <div class="superadmin-only" style="display:none;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1.25rem">
-          <div>
-            <div style="font-size:0.85rem;font-weight:500;color:var(--text)">📋 <span data-i18n="auditLog">Hərəkət jurnalı</span></div>
-            <div style="font-size:0.75rem;color:var(--muted);margin-top:2px" data-i18n="auditLogNote">Son 30 gündəki dəyişikliklər</div>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <select id="audit-user-filter" onchange="renderAuditLog()" style="font-size:0.78rem;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">
-              <option value="" data-i18n="auditAllUsers">Hamısı</option>
-            </select>
-            <button class="btn btn-sm btn-ghost" onclick="renderAuditLog()" style="border:1px solid var(--border)" data-i18n="refresh">↻ Yenilə</button>
-          </div>
-        </div>
-        <div id="audit-log-list" style="padding:0 1.25rem 1rem;max-height:300px;overflow-y:auto"></div>
-      </div>
-
       <!-- EHTİYAT NÜSXƏ -->
       <div class="manager-only" style="padding:0.85rem 1.25rem;border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem">
@@ -850,6 +834,22 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- AUDIT LOG PAGE -->
+  <div class="page" id="page-audit">
+    <div class="page-header">
+      <h2 class="page-title">📋 Hərəkət jurnalı</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="audit-user-filter" onchange="renderAuditLog()" style="font-size:0.82rem;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)">
+          <option value="">Hamısı</option>
+        </select>
+        <button class="btn btn-outline" onclick="renderAuditLog()" style="font-size:0.82rem">↻ Yenilə</button>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div id="audit-log-list" style="padding:1rem 1.25rem"></div>
     </div>
   </div>
 
@@ -1092,8 +1092,6 @@ function showAdminUI(username, role) {
   if (sideLink) sideLink.href = previewUrl;
 
   if (isSuperAdmin) {
-    renderUsersList();
-    renderAuditLog();
     renderDashboard();
   } else {
     loadFromServer();
@@ -3065,7 +3063,6 @@ var editingUserKey = null;
 
 function renderSettingsPage() {
   renderUsersList();
-  renderAuditLog();
   loadUserEmailInput();
 }
 
@@ -3424,6 +3421,7 @@ function showPage(id, el) {
   if (id === 'theme')      renderThemePage();
   if (id === 'analytics')  renderAnalytics();
   if (id === 'print')      renderPrintPage();
+  if (id === 'audit')      renderAuditLog();
   if (id === 'settings')   { renderSettingsPage(); setTimeout(updateAdminThemeBtns, 50); }
   if (id === 'qr')         { setTimeout(function(){ generateQRCode(getMyMenuUrl()); }, 100); }
 }
@@ -3484,6 +3482,9 @@ applyI18n(interfaceLang);
   <div class="mobile-nav-inner">
     <button class="mob-nav-btn active" id="mobnav-dashboard" onclick="showPage('dashboard',this);updateMobNav('dashboard')">
       <span class="mob-icon">📊</span><span>Ana səhifə</span>
+    </button>
+    <button class="mob-nav-btn superadmin-only" id="mobnav-audit" style="display:none" onclick="showPage('audit',this);updateMobNav('audit')">
+      <span class="mob-icon">📋</span><span>Jurnal</span>
     </button>
     <button class="mob-nav-btn manager-only" id="mobnav-menu" onclick="showPage('menu',this);updateMobNav('menu')">
       <span class="mob-icon">🍽️</span><span>Menyu</span>
