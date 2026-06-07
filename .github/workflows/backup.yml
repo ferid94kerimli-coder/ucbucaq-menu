@@ -9,26 +9,43 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Install PostgreSQL 17 client
-        run: |
-          sudo apt-get install -y gnupg curl lsb-release
-          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
-          echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          sudo apt-get update -qq
-          sudo apt-get install -y postgresql-client-17
+      - name: Install psycopg2
+        run: pip install psycopg2-binary
 
-      - name: Dump database
+      - name: Dump database to JSON
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          DATE=$(date +%Y-%m-%d)
-          pg_dump "$DATABASE_URL" \
-            --no-password \
-            --format=custom \
-            --no-acl \
-            --no-owner \
-            -f "backup_${DATE}.dump"
-          echo "Backup size: $(du -sh backup_${DATE}.dump | cut -f1)"
+          python3 - <<'EOF'
+          import os, json, psycopg2
+          from psycopg2.extras import RealDictCursor
+          from datetime import date
+
+          conn = psycopg2.connect(os.environ['DATABASE_URL'], cursor_factory=RealDictCursor)
+          cur = conn.cursor()
+
+          backup = {}
+
+          cur.execute("SELECT * FROM users")
+          backup['users'] = [dict(r) for r in cur.fetchall()]
+          for row in backup['users']:
+              for k, v in row.items():
+                  if hasattr(v, 'isoformat'):
+                      row[k] = v.isoformat()
+
+          cur.execute("SELECT username, data FROM user_data")
+          backup['user_data'] = [dict(r) for r in cur.fetchall()]
+
+          conn.close()
+
+          fname = f"backup_{date.today()}.json"
+          with open(fname, 'w', encoding='utf-8') as f:
+              json.dump(backup, f, ensure_ascii=False, indent=2, default=str)
+
+          size = os.path.getsize(fname)
+          users_count = len(backup['users'])
+          print(f"Backup: {fname} | {size} bytes | {users_count} users")
+          EOF
 
       - name: Upload backup as artifact
         uses: actions/upload-artifact@v4
