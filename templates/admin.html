@@ -174,14 +174,56 @@ input[type=file] { display:none; }
 .toast { position:fixed;bottom:1.5rem;right:1.5rem;background:#1C1917;color:#fff;padding:0.75rem 1.25rem;border-radius:10px;font-size:0.85rem;z-index:999;opacity:0;transform:translateY(10px);transition:all 0.25s;pointer-events:none; }
 .toast.show { opacity:1;transform:translateY(0); }
 
+/* ── MOBILE ── */
 @media(max-width:768px){
-  .sidebar{width:60px;}
-  .sidebar-logo,.nav-item span,.session-info,.logout-btn span{display:none;}
-  .nav-item{justify-content:center;padding:0.65rem;}
-  .session-badge{justify-content:center;padding:0.5rem;}
-  .logout-btn{justify-content:center;padding:0.65rem;}
-  .main{margin-left:60px;padding:1rem;max-width:calc(100vw - 60px);}
-  .form-grid{grid-template-columns:1fr;}
+  .sidebar{ display:none; }
+  .main{ margin-left:0; padding:0.75rem; max-width:100vw; padding-bottom:80px; }
+  .form-grid{ grid-template-columns:1fr; }
+  .page-header{ flex-wrap:wrap; gap:8px; }
+  .stats-grid{ grid-template-columns:1fr 1fr; gap:8px; }
+  .card{ padding:1rem; }
+  .btn{ font-size:0.82rem; padding:0.5rem 0.9rem; }
+  .modal-content{ width:96vw; max-width:96vw; padding:1.25rem; }
+  table{ font-size:0.78rem; }
+}
+
+/* ── MOBİL ALT NAVİQASİYA ── */
+.mobile-nav{
+  display:none;
+  position:fixed;
+  bottom:0; left:0; right:0;
+  background:var(--sidebar-bg,#1a1a2e);
+  border-top:1px solid rgba(255,255,255,0.1);
+  z-index:1000;
+  padding:6px 0 env(safe-area-inset-bottom,6px);
+}
+.mobile-nav-inner{
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+}
+.mob-nav-btn{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px;
+  padding:6px 10px;
+  border:none;
+  background:none;
+  color:rgba(255,255,255,0.5);
+  cursor:pointer;
+  font-size:0.62rem;
+  font-family:inherit;
+  border-radius:10px;
+  transition:color 0.18s;
+  -webkit-tap-highlight-color:transparent;
+}
+.mob-nav-btn .mob-icon{ font-size:1.3rem; line-height:1; }
+.mob-nav-btn.active{ color:#fff; }
+.mob-nav-btn:active{ background:rgba(255,255,255,0.08); }
+
+@media(max-width:768px){
+  .mobile-nav{ display:block; }
 }
 </style>
 </head>
@@ -3310,5 +3352,40 @@ checkResetToken();
 applyI18n(interfaceLang);
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+<!-- MOBİL ALT NAVİQASİYA -->
+<nav class="mobile-nav" id="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mob-nav-btn active" id="mobnav-dashboard" onclick="showPage('dashboard',this);updateMobNav('dashboard')">
+      <span class="mob-icon">📊</span><span>Ana səhifə</span>
+    </button>
+    <button class="mob-nav-btn" id="mobnav-menu" onclick="showPage('menu',this);updateMobNav('menu')">
+      <span class="mob-icon">🍽️</span><span>Menyu</span>
+    </button>
+    <button class="mob-nav-btn" id="mobnav-cafe" onclick="showPage('cafe',this);updateMobNav('cafe')">
+      <span class="mob-icon">🏪</span><span>Kafe</span>
+    </button>
+    <button class="mob-nav-btn" id="mobnav-qr" onclick="showPage('qr',this);updateMobNav('qr')">
+      <span class="mob-icon">📷</span><span>QR Kod</span>
+    </button>
+    <button class="mob-nav-btn" id="mobnav-settings" onclick="showPage('settings',this);updateMobNav('settings')">
+      <span class="mob-icon">⚙️</span><span>Ayarlar</span>
+    </button>
+  </div>
+</nav>
+
+<script>
+function updateMobNav(page) {
+  document.querySelectorAll('.mob-nav-btn').forEach(function(b){ b.classList.remove('active'); });
+  var btn = document.getElementById('mobnav-' + page);
+  if (btn) btn.classList.add('active');
+}
+// showPage çağırıldıqda mob nav-ı da yenilə
+var _origShowPage = showPage;
+showPage = function(id, el) {
+  _origShowPage(id, el);
+  updateMobNav(id);
+};
+</script>
 </body>
 </html>
