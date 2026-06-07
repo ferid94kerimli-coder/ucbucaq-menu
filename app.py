@@ -538,6 +538,8 @@ def api_login():
     password = data.get('password', '')
     users = load_users()
     if username in users and check_password_hash(users[username]['password'], password):
+        if not users[username].get('is_active', True):
+            return jsonify({'ok': False, 'error': 'Hesab deaktiv edilib'}), 403
         role = users[username].get('role', 'manager')
         must_change = users[username].get('must_change_password', False)
         session.permanent = True

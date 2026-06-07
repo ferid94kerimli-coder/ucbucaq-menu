@@ -35,6 +35,8 @@ body.admin-dark .cat-tab { background: #222; color: var(--muted); border-color: 
 body.admin-dark .cat-tab:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
 body.admin-dark .btn-ghost { background: transparent; color: var(--text); border-color: var(--border); }
 body.admin-dark .btn-ghost:hover { background: rgba(255,255,255,0.06); }
+body.admin-dark .btn-outline { background: transparent; color: var(--text); border-color: var(--border); }
+body.admin-dark .btn-outline:hover { background: rgba(255,255,255,0.06); }
 body.admin-dark .btn-danger { background: rgba(220,38,38,0.15); color: #fca5a5; }
 body.admin-dark .btn-danger:hover { background: rgba(220,38,38,0.25); }
 body.admin-dark .drawer { background: #1C1C1C; }
@@ -105,6 +107,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .btn-primary:hover { background:var(--accent-dark); }
 .btn-ghost { background:transparent;border:1px solid var(--border);color:var(--text); }
 .btn-ghost:hover { background:rgba(0,0,0,0.04); }
+.btn-outline { background:transparent;border:1px solid var(--border);color:var(--text); }
+.btn-outline:hover { background:rgba(0,0,0,0.04); }
 .btn-danger { background:#fee2e2;color:var(--danger);border:none; }
 .btn-danger:hover { background:#fecaca; }
 .btn-sm { padding:0.35rem 0.75rem;font-size:0.75rem; }
@@ -247,7 +251,7 @@ input[type=file] { display:none; }
   display:none;
   position:fixed;
   bottom:0; left:0; right:0;
-  background:var(--sidebar-bg,#1a1a2e);
+  background:var(--sidebar);
   border-top:1px solid rgba(255,255,255,0.1);
   z-index:1000;
   padding:6px 0 env(safe-area-inset-bottom,6px);
@@ -984,7 +988,6 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
 
 <script>
 // ── AUTH ──
-var CREDENTIALS = { admin:'admin123', manager:'cafe2024' };
 
 
 // ── ŞİFRƏ SIFIRLAMA (token linki ilə) ──
@@ -1321,45 +1324,6 @@ function closeRestaurantModal() {
   _rmCurrentUsername = null;
 }
 
-function _renderSubInfo(subExpires) {
-  var expiresEl = document.getElementById('rm-sub-expires');
-  var badgeEl   = document.getElementById('rm-sub-badge');
-  var dateInput = document.getElementById('rm-sub-date-input');
-  if (!subExpires) {
-    expiresEl.textContent = 'Məhdudiyyətsiz';
-    badgeEl.innerHTML = '<span style="background:rgba(34,197,94,0.12);color:#16a34a;padding:2px 10px;border-radius:12px;font-size:0.72rem;font-weight:600">∞ Aktiv</span>';
-    dateInput.value = '';
-    return;
-  }
-  var exp = new Date(subExpires);
-  var now = new Date();
-  var days = Math.ceil((exp - now) / 86400000);
-  var dateStr = exp.toLocaleDateString('az-AZ', {day:'2-digit', month:'2-digit', year:'numeric'});
-  expiresEl.textContent = dateStr;
-  dateInput.value = exp.toISOString().slice(0, 10);
-  if (days > 0) {
-    badgeEl.innerHTML = '<span style="background:rgba(34,197,94,0.12);color:#16a34a;padding:2px 10px;border-radius:12px;font-size:0.72rem;font-weight:600">✓ ' + days + ' gün qalır</span>';
-  } else {
-    badgeEl.innerHTML = '<span style="background:rgba(239,68,68,0.1);color:#dc2626;padding:2px 10px;border-radius:12px;font-size:0.72rem;font-weight:600">✕ Bitib</span>';
-  }
-}
-
-async function _saveSubscription(isoDate) {
-  if (!_rmCurrentUsername) return;
-  var res = await fetch('/api/superadmin/users/' + encodeURIComponent(_rmCurrentUsername) + '/set-subscription', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({expires: isoDate})
-  });
-  var data = await res.json();
-  if (!data.ok) { showToast('❌ ' + (data.error || 'Xəta')); return; }
-  // Update cached data
-  var r = _saRestaurantsData.find(function(x){ return x.username === _rmCurrentUsername; });
-  if (r) r.sub_expires = data.sub_expires;
-  _renderSubInfo(data.sub_expires);
-  showToast('✅ Abunəlik yeniləndi');
-  renderSuperadminDashboard();
-}
 
 async function renderSubscriptionPage() {
   var tbody = document.getElementById('sub-table-body');
@@ -1406,7 +1370,7 @@ async function renderSubscriptionPage() {
       +'<td style="white-space:nowrap">'
         +'<div style="display:flex;gap:4px;align-items:center">'
         +'<input type="number" id="sub-amt-'+safeU+'" min="1" max="520" value="1" style="width:52px;font-size:0.75rem;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">'
-        +'<select id="sub-unit-'+safeU+'" style="font-size:0.75rem;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">'
+        +'<select id="sub-unit-'+safeU+'" onchange="var a=document.getElementById(\'sub-amt-'+safeU+'\');if(a)a.style.display=this.value===\'unlimited\'?\'none\':\'\'" style="font-size:0.75rem;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">'
         +'<option value="week">Həftə</option>'
         +'<option value="month" selected>Ay</option>'
         +'<option value="unlimited">Məhdudiyyətsiz</option>'
@@ -1456,38 +1420,6 @@ async function subAddTrial(username) {
   await _subSave(username, base.toISOString(), '1 həftəlik trial təyin edildi');
 }
 
-function addSubscriptionCustom(unit) {
-  var val = parseInt(document.getElementById('rm-sub-amount-input').value);
-  if (!val || val < 1) { showToast('Say daxil edin'); return; }
-  document.getElementById('rm-sub-amount-input').value = '';
-  var r = _saRestaurantsData.find(function(x){ return x.username === _rmCurrentUsername; });
-  var base = (r && r.sub_expires && new Date(r.sub_expires) > new Date()) ? new Date(r.sub_expires) : new Date();
-  if (unit === 'month') {
-    base.setMonth(base.getMonth() + val);
-  } else {
-    base.setDate(base.getDate() + val * 7);
-  }
-  _saveSubscription(base.toISOString());
-}
-
-function addSubscriptionMonths(months) {
-  var r = _saRestaurantsData.find(function(x){ return x.username === _rmCurrentUsername; });
-  var base = (r && r.sub_expires && new Date(r.sub_expires) > new Date()) ? new Date(r.sub_expires) : new Date();
-  base.setMonth(base.getMonth() + months);
-  _saveSubscription(base.toISOString());
-}
-
-function clearSubscription() {
-  showConfirm('Abunəliyi sil', 'Bu restoran üçün abunəlik məhdudiyyəti aradan qaldırılacaq (məhdudiyyətsiz olacaq).', function() {
-    _saveSubscription(null);
-  }, '🗑️', 'Sil');
-}
-
-function setCustomSubscription() {
-  var val = document.getElementById('rm-sub-date-input').value;
-  if (!val) { showToast('Tarix seçin'); return; }
-  _saveSubscription(new Date(val + 'T23:59:59Z').toISOString());
-}
 
 async function doToggleActive(username, activate) {
   var msg = activate
@@ -3581,11 +3513,6 @@ function deleteUser(key) {
   }, '👤');
 }
 
-function syncCredentials(users) {
-  // Sync CREDENTIALS object so login works immediately
-  Object.keys(CREDENTIALS).forEach(function(k){ delete CREDENTIALS[k]; });
-  Object.keys(users).forEach(function(k){ CREDENTIALS[k] = users[k].pass; });
-}
 
 // Change password
 function changePassword() {
