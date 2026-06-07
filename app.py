@@ -106,6 +106,10 @@ def _push_static_menu_async(username: str) -> None:
             html = render_template('menu.html',
                 menu_user=username,
                 embedded_data=json.dumps(pub, ensure_ascii=False))
+        # Relative static path-ları Railway absolute URL-ə çevir
+        _railway = 'https://qr-menu-az.up.railway.app'
+        html = html.replace('href="/static/', f'href="{_railway}/static/')
+        html = html.replace('src="/static/', f'src="{_railway}/static/')
         _push_to_cf_worker(username, html)
     except Exception:
         pass
