@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, make_response
 from flask_compress import Compress
 from functools import wraps
-import contextlib, copy, json, os, uuid, secrets, time
+import contextlib, copy, json, os, uuid, secrets, time, base64, threading
+import urllib.request as _urllib
 from datetime import datetime, timedelta
 from collections import defaultdict
 from werkzeug.utils import secure_filename
@@ -64,6 +65,68 @@ def _set_cached_data(username: str, data: dict) -> None:
 
 def _invalidate_cache(username: str) -> None:
     _data_cache.pop(username, None)
+
+# ── GITHUB PAGES PUSH ──
+_GH_TOKEN = os.environ.get('GITHUB_TOKEN', '')
+_GH_REPO  = os.environ.get('GITHUB_PAGES_REPO', '')
+_GH_BASE  = 'https://ferid94kerimli-coder.github.io/ucbucaq-menu-pages'
+
+def _push_static_menu(username: str, html: str) -> None:
+    """Rendered menu HTML-ini GitHub Pages repo-suna push edir (background thread)."""
+    if not _GH_TOKEN or not _GH_REPO:
+        return
+    try:
+        path     = f'menu/{username}.html'
+        api_url  = f'https://api.github.com/repos/{_GH_REPO}/contents/{path}'
+        headers  = {
+            'Authorization': f'token {_GH_TOKEN}',
+            'Content-Type':  'application/json',
+            'User-Agent':    'qr-menu-flask'
+        }
+        # Mövcud faylın SHA-sını al (update üçün lazımdır)
+        sha = None
+        try:
+            req = _urllib.Request(api_url, headers=headers)
+            with _urllib.urlopen(req, timeout=8) as r:
+                sha = json.loads(r.read()).get('sha')
+        except Exception:
+            pass
+
+        content_b64 = base64.b64encode(html.encode('utf-8')).decode('ascii')
+        payload = {'message': f'menu: update {username}', 'content': content_b64}
+        if sha:
+            payload['sha'] = sha
+
+        req = _urllib.Request(api_url,
+            data=json.dumps(payload).encode(),
+            headers=headers, method='PUT')
+        with _urllib.urlopen(req, timeout=10):
+            pass
+    except Exception:
+        pass  # Push uğursuz olsa belə menyu normal işləyir
+
+def _push_static_menu_async(username: str) -> None:
+    """Menu HTML-ini render edib arxa fonda GitHub-a push edir."""
+    try:
+        cached = _get_cached_data(username)
+        if cached is None:
+            return
+        pub = {k: cached[k] for k in ('cafe', 'categories', 'items', 'theme') if k in cached}
+        def _strip_b64(obj):
+            if isinstance(obj, dict):
+                return {k: ('' if isinstance(v, str) and v.startswith('data:') else _strip_b64(v))
+                        for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [_strip_b64(i) for i in obj]
+            return obj
+        pub = _strip_b64(pub)
+        with app.app_context():
+            html = render_template('menu.html',
+                menu_user=username,
+                embedded_data=json.dumps(pub, ensure_ascii=False))
+        _push_static_menu(username, html)
+    except Exception:
+        pass
 
 # ── USERS CACHE ──
 _users_cache: dict = {'data': None, 'ts': 0.0}
@@ -539,6 +602,8 @@ def api_save_data():
     _invalidate_cache(username)
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     log_action(username, 'save_data', {'keys': changed}, ip)
+    # Yenilənmiş menyunu GitHub Pages-ə arxa fonda push et
+    threading.Thread(target=_push_static_menu_async, args=(username,), daemon=True).start()
     return jsonify({'ok': True})
 
 # ────────────────────────────────────────────────────────────────
