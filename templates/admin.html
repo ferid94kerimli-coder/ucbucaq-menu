@@ -372,36 +372,11 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
       </div>
       <div class="login-error" id="login-error"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">Daxil ol</button>
-      <div style="text-align:center;margin-top:12px">
-        <button type="button" onclick="openForgotModal()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:0.78rem;cursor:pointer;text-decoration:underline;font-family:inherit">Şifrəmi unutdum</button>
-      </div>
     </div>
   </div>
 </div>
 
-<!-- ŞIFRƏMI UNUTDUM MODAL -->
-<div id="forgot-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
-  <div style="background:#1C1917;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:2rem;width:360px;max-width:92vw;animation:loginSlideUp 0.3s ease both">
-    <div style="text-align:center;margin-bottom:1.5rem">
-      <div style="font-size:2rem;margin-bottom:8px">📧</div>
-      <h3 style="color:#fff;font-family:'Playfair Display',serif;font-weight:600;margin:0 0 4px">Şifrəni sıfırla</h3>
-      <p style="font-size:0.78rem;color:rgba(255,255,255,0.4);margin:0">İstifadəçi adınızı və ya email-inizi daxil edin</p>
-    </div>
-    <div class="login-field" style="margin-bottom:12px">
-      <input class="login-input" id="forgot-identifier" type="text" placeholder="İstifadəçi adı və ya email" onkeydown="if(event.key==='Enter')doForgotPassword()">
-    </div>
-    <div id="forgot-msg" style="font-size:0.78rem;text-align:center;min-height:1.2em;margin-bottom:8px"></div>
-    <button class="login-btn" id="forgot-btn" onclick="doForgotPassword()">Sıfırlama linki göndər</button>
-    <div style="text-align:center;margin-top:10px">
-      <button type="button" onclick="document.getElementById('forgot-modal').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.35);font-size:0.78rem;cursor:pointer;font-family:inherit">Geri qayıt</button>
-    </div>
-  </div>
-</div>
-
-
-
-
-<!-- YENİ ŞİFRƏ MODAL (reset link ilə giriş zamanı) -->
+<!-- İLK GİRİŞ ŞİFRƏ DƏYİŞMƏ MODAL -->
 <div id="reset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
   <div style="background:#1C1917;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:2rem;width:360px;max-width:92vw;animation:loginSlideUp 0.3s ease both">
     <div style="text-align:center;margin-bottom:1.5rem">
@@ -884,16 +859,6 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
         <button class="btn btn-sm btn-ghost" onclick="syncMenu()" style="border:2px solid var(--border)" data-i18n="syncNow">↺ Sinxronlaşdır</button>
       </div>
 
-      <!-- BƏRPA EMAİL -->
-      <div class="manager-only" style="padding:0.85rem 1.25rem;border-bottom:1px solid var(--border)">
-        <div style="font-size:0.85rem;font-weight:500;color:var(--text);margin-bottom:6px">📧 <span data-i18n="recoveryEmail">Bərpa email-i</span></div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px" data-i18n="recoveryEmailNote">Şifrənizi unutduqda bu ünvana sıfırlama linki göndəriləcək.</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="email" id="s-email" placeholder="email@example.com" style="flex:1;font-size:0.83rem;height:36px">
-          <button class="btn btn-sm btn-primary" onclick="saveUserEmail()">Yadda saxla</button>
-        </div>
-      </div>
-
       <!-- ŞİFRƏ DƏYİŞ -->
       <div style="padding:0.85rem 1.25rem">
         <div style="font-size:0.85rem;font-weight:500;color:var(--text);margin-bottom:0.75rem">🔒 <span data-i18n="changePass">Şifrə dəyiş</span></div>
@@ -1030,50 +995,16 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
 // ── AUTH ──
 
 
-// ── ŞİFRƏ SIFIRLAMA (token linki ilə) ──
-var RESET_TOKEN = (function(){ var p = new URLSearchParams(window.location.search); return p.get('reset') || null; })();
-var _forceChangePass = false;  // must_change_password flag-i ilə açılır
-if (RESET_TOKEN) {
-  window.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('reset-modal').style.display = 'flex';
-    history.replaceState(null, '', window.location.pathname);
-  });
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-function openForgotModal() {
-  document.getElementById('forgot-identifier').value = '';
-  document.getElementById('forgot-msg').textContent = '';
-  document.getElementById('forgot-btn').disabled = false;
-  document.getElementById('forgot-btn').textContent = 'Sıfırlama linki göndər';
-  document.getElementById('forgot-modal').style.display = 'flex';
-  setTimeout(function(){ document.getElementById('forgot-identifier').focus(); }, 100);
-}
-
-async function doForgotPassword() {
-  var id  = document.getElementById('forgot-identifier').value.trim();
-  var msg = document.getElementById('forgot-msg');
-  var btn = document.getElementById('forgot-btn');
-  if (!id) { msg.style.color='#fca5a5'; msg.textContent='Ad və ya email daxil edin'; return; }
-  btn.disabled = true; btn.textContent = '⏳ Göndərilir...';
-  try {
-    var r = await fetch('/api/forgot-password', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username: id}) });
-    var d = await r.json();
-    if (d.ok) {
-      msg.style.color = '#86efac';
-      msg.textContent = '✅ Email göndərildi (mövcud olduqda)';
-    } else {
-      msg.style.color = '#fca5a5';
-      msg.textContent = d.error || 'Xəta baş verdi';
-      btn.disabled = false; btn.textContent = 'Sıfırlama linki göndər';
-    }
-  } catch(e) {
-    msg.style.color = '#fca5a5'; msg.textContent = 'Server bağlantı xətası';
-    btn.disabled = false; btn.textContent = 'Sıfırlama linki göndər';
-  }
-}
+// ── İLK GİRİŞ ŞİFRƏ DƏYİŞMƏ ──
+var _forceChangePass = false;
 function openForceChangeModal() {
   _forceChangePass = true;
-  RESET_TOKEN = null;
   document.getElementById('reset-pass1').value = '';
   document.getElementById('reset-pass2').value = '';
   document.getElementById('reset-msg').textContent = 'İlk girişdə şifrənizi dəyişməlisiniz.';
@@ -1115,26 +1046,6 @@ function doResetPassword() {
       msgEl.textContent = 'Server bağlantı xətası';
       btn.disabled = false; btn.textContent = 'Şifrəni yenilə';
     });
-    return;
-  }
-  fetch('/api/reset-password', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({token: RESET_TOKEN, password: pass1})
-  }).then(function(r){ return r.json(); }).then(function(d){
-    if (d.ok) {
-      msgEl.style.color = '#86efac';
-      msgEl.textContent = '✅ Şifrə uğurla yeniləndi! İndi daxil ola bilərsiniz.';
-      btn.style.display = 'none';
-      setTimeout(function(){ document.getElementById('reset-modal').style.display = 'none'; }, 2000);
-    } else {
-      msgEl.textContent = d.error || 'Xəta baş verdi';
-      btn.disabled = false; btn.textContent = 'Şifrəni yenilə';
-    }
-  }).catch(function(){
-    msgEl.textContent = 'Server bağlantı xətası';
-    btn.disabled = false; btn.textContent = 'Şifrəni yenilə';
-  });
 }
 
 function checkSession() {
@@ -1344,8 +1255,8 @@ async function renderSuperadminDashboard() {
       var safeU = r.username.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       var isActive = r.is_active !== false;
       var tr = document.createElement('tr');
-      tr.innerHTML = '<td><button onclick="openRestaurantModal(\''+safeU+'\')" style="background:none;border:none;cursor:pointer;font-weight:600;color:var(--accent);font-size:0.85rem;padding:0;text-decoration:underline;text-underline-offset:2px;'+(isActive?'':'text-decoration:line-through;color:var(--muted)')+'">'+r.username+'</button></td>'
-        +'<td style="color:var(--muted);font-size:0.85rem">'+(r.name||'—')+'</td>'
+      tr.innerHTML = '<td><button onclick="openRestaurantModal(\''+safeU+'\')" style="background:none;border:none;cursor:pointer;font-weight:600;color:var(--accent);font-size:0.85rem;padding:0;text-decoration:underline;text-underline-offset:2px;'+(isActive?'':'text-decoration:line-through;color:var(--muted)')+'">'+escHtml(r.username)+'</button></td>'
+        +'<td style="color:var(--muted);font-size:0.85rem">'+escHtml(r.name||'—')+'</td>'
         +'<td style="color:var(--accent);font-weight:500">'+(r.opens||0)+'</td>'
         +'<td style="color:var(--muted)">'+(r.totalClicks||0)+'</td>'
         +'<td><span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600;background:'+(isActive?'rgba(34,197,94,0.12)':'rgba(239,68,68,0.1)')+';color:'+(isActive?'#16a34a':'#dc2626')+'">'+(isActive?'Aktiv':'Deaktiv')+'</span></td>'
@@ -1383,8 +1294,8 @@ function openRestaurantModal(username) {
       var pct = Math.round(parseInt(item[1]) / max * 100);
       return '<div style="margin-bottom:8px">'
         +'<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:3px">'
-        +'<span style="color:var(--text)">'+(i+1)+'. '+item[0]+'</span>'
-        +'<span style="font-weight:600;color:'+color+'">'+item[1]+'</span>'
+        +'<span style="color:var(--text)">'+(i+1)+'. '+escHtml(item[0])+'</span>'
+        +'<span style="font-weight:600;color:'+color+'">'+escHtml(item[1])+'</span>'
         +'</div>'
         +'<div style="background:var(--border);border-radius:4px;height:4px">'
         +'<div style="background:'+color+';height:4px;border-radius:4px;width:'+pct+'%;transition:width 0.4s"></div>'
@@ -1441,7 +1352,7 @@ async function renderSubscriptionPage() {
       }
     }
     var tr = document.createElement('tr');
-    tr.innerHTML = '<td><div style="font-weight:600;color:var(--text);font-size:0.85rem">'+r.username+'</div><div style="font-size:0.75rem;color:var(--muted);margin-top:1px">'+(r.name||'')+'</div></td>'
+    tr.innerHTML = '<td><div style="font-weight:600;color:var(--text);font-size:0.85rem">'+escHtml(r.username)+'</div><div style="font-size:0.75rem;color:var(--muted);margin-top:1px">'+escHtml(r.name)+'</div></td>'
       +'<td>'+statusHtml+'</td>'
       +'<td style="font-size:0.82rem;color:var(--text)">'+expiresStr+'</td>'
       +'<td>'+daysHtml+'</td>'
@@ -3356,7 +3267,6 @@ var editingUserKey = null;
 
 function renderSettingsPage() {
   renderUsersList();
-  loadUserEmailInput();
 }
 
 function renderAuditLog() {
@@ -3389,8 +3299,8 @@ function renderAuditLog() {
     html += '</tr></thead><tbody>';
     rows.forEach(function(r) {
       html += '<tr style="border-bottom:1px solid var(--border)">';
-      html += '<td style="padding:5px 6px;font-weight:500">' + r.username + '</td>';
-      html += '<td style="padding:5px 6px">' + (actionMap[r.action] || r.action) + '</td>';
+      html += '<td style="padding:5px 6px;font-weight:500">' + escHtml(r.username) + '</td>';
+      html += '<td style="padding:5px 6px">' + escHtml(actionMap[r.action] || r.action) + '</td>';
       html += '<td style="padding:5px 6px;color:var(--muted);text-align:right;white-space:nowrap">' + auditTimeAgo(r.ts) + '</td>';
       html += '</tr>';
     });
@@ -3414,37 +3324,6 @@ function auditTimeAgo(isoStr) {
   if (diff < 3600) return Math.floor(diff/60)   + (t._minAgo || ' dəq əvvəl');
   if (diff < 86400)return Math.floor(diff/3600) + (t._hrAgo  || ' saat əvvəl');
   return               Math.floor(diff/86400)   + (t._dayAgo || ' gün əvvəl');
-}
-
-function loadUserEmailInput() {
-  var session = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
-  var username = session.username;
-  if (!username) return;
-  fetch('/api/users/' + username + '/info').then(function(r){ return r.json(); }).then(function(d){
-    if (d.email !== undefined) {
-      var el = document.getElementById('s-email');
-      if (el) el.value = d.email || '';
-    }
-  }).catch(function(){});
-}
-
-function saveUserEmail() {
-  var sess = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
-  var username = sess.username;
-  if (!username) { showToast(interfaceLang==='en'?'Login required':'Giriş tələb olunur'); return; }
-  var email = (document.getElementById('s-email') || {}).value.trim();
-  fetch('/api/users/' + username + '/email', {
-    method: 'PUT',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({email: email})
-  }).then(function(r){ return r.json(); }).then(function(d){
-    if (d.ok) {
-      if (d.email_sent) showToast(interfaceLang==='en'?'✅ Email saved. Reset link sent.':'✅ Email yadda saxlandı. Sıfırlama linki göndərildi.');
-      else showToast(interfaceLang==='en'?'✅ Email saved':'✅ Email yadda saxlandı');
-    } else {
-      showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
-    }
-  }).catch(function(){ showToast(interfaceLang==='en'?'❌ Connection error':'❌ Bağlantı xətası'); });
 }
 
 function renderUsersList() {
@@ -3473,10 +3352,10 @@ function renderUsersList() {
       row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.65rem 0;border-bottom:1px solid var(--border);';
       row.innerHTML =
         '<div style="display:flex;align-items:center;gap:10px">' +
-          '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600">' + key.charAt(0).toUpperCase() + '</div>' +
+          '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600">' + escHtml(key.charAt(0).toUpperCase()) + '</div>' +
           '<div>' +
-            '<div style="font-weight:500;font-size:0.88rem">' + key + (isMe ? ' <span style="font-size:0.65rem;padding:1px 6px;background:#eaf3de;color:#3B6D11;border-radius:5px">'+youLabel+'</span>' : '') + '</div>' +
-            '<div style="font-size:0.73rem;color:var(--muted)">' + roleLabel + (u.email ? ' · ' + u.email : '') + '</div>' +
+            '<div style="font-weight:500;font-size:0.88rem">' + escHtml(key) + (isMe ? ' <span style="font-size:0.65rem;padding:1px 6px;background:#eaf3de;color:#3B6D11;border-radius:5px">'+escHtml(youLabel)+'</span>' : '') + '</div>' +
+            '<div style="font-size:0.73rem;color:var(--muted)">' + escHtml(roleLabel) + (u.email ? ' · ' + escHtml(u.email) : '') + '</div>' +
           '</div>' +
         '</div>' +
         '<div style="display:flex;gap:6px">' +

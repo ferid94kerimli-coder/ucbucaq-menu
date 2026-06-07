@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_mail import Mail, Message
 from PIL import Image
 import io
 import psycopg2
@@ -45,10 +44,6 @@ def _record_failed_attempt(ip: str) -> None:
 def _clear_attempts(ip: str) -> None:
     _login_attempts.pop(ip, None)
 
-# ── FORGOT-PASSWORD RATE LIMITING (ayrı bucketdə) ──
-_forgot_attempts: dict = defaultdict(list)
-_FORGOT_MAX = 3
-_FORGOT_WINDOW = 300  # 5 dəqiqə
 
 # ── MENYU DATA CACHE (server-side, public sorğular üçün) ──
 _data_cache: dict = {}   # {username: (data_dict, timestamp)}
@@ -146,14 +141,6 @@ def _set_cached_users(users: dict) -> None:
 def _invalidate_users_cache() -> None:
     _users_cache['data'] = None
 
-def _is_forgot_limited(ip: str) -> bool:
-    now = time.time()
-    _forgot_attempts[ip] = [t for t in _forgot_attempts[ip] if now - t < _FORGOT_WINDOW]
-    return len(_forgot_attempts[ip]) >= _FORGOT_MAX
-
-def _record_forgot_attempt(ip: str) -> None:
-    _forgot_attempts[ip].append(time.time())
-
 # ── CLOUDINARY KONFİQURASİYASI ──
 cloudinary.config(
     cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
@@ -162,27 +149,7 @@ cloudinary.config(
     secure=True
 )
 
-# ── EMAIL KONFİQURASİYASI ──
-_mail_user = os.environ.get('MAIL_USERNAME')
-_mail_pass = os.environ.get('MAIL_PASSWORD')
-if not _mail_user or not _mail_pass:
-    import warnings
-    warnings.warn(
-        "MAIL_USERNAME və ya MAIL_PASSWORD mühit dəyişəni təyin edilməyib.",
-        RuntimeWarning
-    )
-
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_USERNAME'] = _mail_user
-app.config['MAIL_PASSWORD'] = _mail_pass
-app.config['MAIL_DEFAULT_SENDER'] = ('QR Menu', _mail_user)
-
 APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://ucbucaqq-production.up.railway.app')
-
-mail = Mail(app)
 
 ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
@@ -551,73 +518,6 @@ def api_login():
     _record_failed_attempt(ip)
     log_action(username or '?', 'login_failed', {}, ip)
     return jsonify({'ok': False, 'error': 'İstifadəçi adı və ya şifrə yanlışdır'}), 401
-
-@app.route('/api/forgot-password', methods=['POST'])
-def api_forgot_password():
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-    if _is_forgot_limited(ip):
-        return jsonify({'ok': False, 'error': 'Çox sayda cəhd. 5 dəqiqə gözləyin.'}), 429
-    _record_forgot_attempt(ip)
-    data = request.json or {}
-    identifier = data.get('username', '').strip().lower()
-    users = load_users()
-    target = None
-    for uname, udata in users.items():
-        if uname.lower() == identifier or (udata.get('email') or '').lower() == identifier:
-            target = (uname, udata)
-            break
-    if not target:
-        return jsonify({'ok': True})  # security: don't reveal if user exists
-    uname, udata = target
-    email = udata.get('email', '')
-    if not email:
-        return jsonify({'ok': False, 'error': 'Bu hesabın email-i yoxdur. Administratorla əlaqə saxlayın.'})
-    import secrets
-    token = secrets.token_urlsafe(32)
-    expires = datetime.now(timezone.utc) + timedelta(hours=2)
-    with db_conn() as conn:
-        cur = conn.cursor()
-        cur.execute("DELETE FROM reset_tokens WHERE username=%s", (uname,))
-        cur.execute("INSERT INTO reset_tokens (token, username, expires, used) VALUES (%s,%s,%s,FALSE)", (token, uname, expires))
-    reset_url = f"{APP_BASE_URL}/admin?reset={token}"
-    try:
-        msg = Message('QR Menu — Şifrə sıfırlama', recipients=[email])
-        msg.html = f"""<p>Salam <b>{uname}</b>,</p>
-<p>Şifrənizi sıfırlamaq üçün aşağıdakı linkə basın (2 saat ərzində etibarlıdır):</p>
-<p><a href="{reset_url}">{reset_url}</a></p>
-<p>Bu sorğu siz göndərməmisinizsə, məktubu nəzərə almayın.</p>"""
-        mail.send(msg)
-    except Exception as e:
-        return jsonify({'ok': False, 'error': 'Email göndərilmədi. Server xətası.'})
-    log_action(uname, 'forgot_password', {}, ip)
-    return jsonify({'ok': True})
-
-@app.route('/api/reset-password', methods=['POST'])
-def api_reset_password():
-    data = request.json or {}
-    token = data.get('token', '').strip()
-    password = data.get('password', '')
-    if not token or not password:
-        return jsonify({'ok': False, 'error': 'Token və şifrə tələb olunur'}), 400
-    if len(password) < 6:
-        return jsonify({'ok': False, 'error': 'Şifrə ən az 6 simvol olmalıdır'}), 400
-    with db_conn() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT username, expires, used FROM reset_tokens WHERE token=%s", (token,))
-        row = cur.fetchone()
-        if not row:
-            return jsonify({'ok': False, 'error': 'Token tapılmadı və ya etibarsızdır'}), 400
-        if row['used']:
-            return jsonify({'ok': False, 'error': 'Bu token artıq istifadə edilib'}), 400
-        if row['expires'] < datetime.now(timezone.utc):
-            return jsonify({'ok': False, 'error': 'Tokenin vaxtı bitib. Yenidən cəhd edin.'}), 400
-        username = row['username']
-        hashed = generate_password_hash(password)
-        cur.execute("UPDATE users SET password=%s WHERE username=%s", (hashed, username))
-        cur.execute("UPDATE reset_tokens SET used=TRUE WHERE token=%s", (token,))
-    _invalidate_users_cache()
-    log_action(username, 'reset_password', {}, request.remote_addr or '')
-    return jsonify({'ok': True})
 
 @app.route('/api/logout', methods=['POST'])
 def api_logout():
