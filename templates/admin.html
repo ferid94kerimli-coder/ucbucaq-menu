@@ -277,9 +277,13 @@ input[type=file] { display:none; }
 .mob-nav-btn.active{ color:#fff; }
 .mob-nav-btn:active{ background:rgba(255,255,255,0.08); }
 body.is-superadmin .manager-only{ display:none !important; }
+#impersonate-banner{ display:none;position:fixed;top:0;left:0;right:0;background:#f59e0b;color:#1a1a1a;z-index:1500;padding:6px 16px;align-items:center;justify-content:center;gap:12px;font-size:0.83rem;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+body.is-impersonating .sidebar{ top:38px; }
+body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
 
 @media(max-width:768px){
   .mobile-nav.visible{ display:block; }
+  body.is-impersonating .main{ padding-top:calc(0.65rem + 38px); }
 }
 </style>
 </head>
@@ -296,6 +300,12 @@ body.is-superadmin .manager-only{ display:none !important; }
       <button class="btn btn-danger" style="flex:1;background:var(--danger);color:#fff" id="confirm-ok-btn" onclick="confirmOk()">Sil</button>
     </div>
   </div>
+</div>
+
+<!-- İMPERSONASİYA BANNERI -->
+<div id="impersonate-banner">
+  <span>⚠️ Siz "<strong id="impersonate-name"></strong>" kimi daxilsiniz</span>
+  <button onclick="doUnimpersonate()" style="background:#1a1a1a;color:#fff;border:none;border-radius:6px;padding:4px 14px;cursor:pointer;font-size:0.8rem;font-weight:500">← Superadmina qayıt</button>
 </div>
 
 <!-- LOGIN -->
@@ -996,8 +1006,14 @@ function doResetPassword() {
 
 function checkSession() {
   fetch('/api/me').then(function(r){ return r.json(); }).then(function(d){
-    if (d.ok) showAdminUI(d.username, d.role);
-    else {
+    if (d.ok) {
+      if (d.impersonating) {
+        document.getElementById('impersonate-name').textContent = d.username;
+        document.getElementById('impersonate-banner').style.display = 'flex';
+        document.body.classList.add('is-impersonating');
+      }
+      showAdminUI(d.username, d.role);
+    } else {
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('login-screen').classList.remove('hidden');
       setTimeout(function(){ document.getElementById('login-user').focus(); }, 300);
@@ -1191,12 +1207,16 @@ async function renderSuperadminDashboard() {
     tbody.innerHTML = '';
     (data.restaurants || []).slice().sort(function(a,b){ return (b.opens||0)-(a.opens||0); }).forEach(function(r){
       var menuUrl = 'https://qr-menu-worker.qr-menu-az.workers.dev/menu/' + encodeURIComponent(r.username);
+      var safeU = r.username.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       var tr = document.createElement('tr');
       tr.innerHTML = '<td style="font-weight:500">'+r.username+'</td>'
         +'<td style="color:var(--muted);font-size:0.85rem">'+(r.name||'—')+'</td>'
         +'<td style="color:var(--accent);font-weight:500">'+(r.opens||0)+'</td>'
         +'<td style="color:var(--muted)">'+(r.totalClicks||0)+'</td>'
-        +'<td><a href="'+menuUrl+'" target="_blank" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);text-decoration:none;font-size:0.75rem;padding:3px 10px">👁 Bax</a></td>';
+        +'<td style="white-space:nowrap">'
+          +'<a href="'+menuUrl+'" target="_blank" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);text-decoration:none;font-size:0.75rem;padding:3px 8px;margin-right:4px">👁 Bax</a>'
+          +'<button onclick="doImpersonate(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem;padding:3px 8px">🔑 Panel</button>'
+        +'</td>';
       tbody.appendChild(tr);
     });
     if (!(data.restaurants||[]).length) {
@@ -1205,6 +1225,27 @@ async function renderSuperadminDashboard() {
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:1rem">Yüklənmə xətası</td></tr>';
   }
+}
+
+async function doImpersonate(username) {
+  var res = await fetch('/api/superadmin/impersonate/' + encodeURIComponent(username), {method:'POST'});
+  var data = await res.json();
+  if (!data.ok) { showToast('❌ ' + (data.error || 'Xəta')); return; }
+  document.getElementById('impersonate-name').textContent = username;
+  document.getElementById('impersonate-banner').style.display = 'flex';
+  document.body.classList.add('is-impersonating');
+  showAdminUI(data.username, data.role);
+  showPage('dashboard', document.querySelector('.nav-item'));
+}
+
+async function doUnimpersonate() {
+  var res = await fetch('/api/superadmin/unimpersonate', {method:'POST'});
+  var data = await res.json();
+  if (!data.ok) { showToast('❌ ' + (data.error || 'Xəta')); return; }
+  document.getElementById('impersonate-banner').style.display = 'none';
+  document.body.classList.remove('is-impersonating');
+  showAdminUI(data.username, data.role);
+  showPage('dashboard', document.querySelector('.nav-item'));
 }
 
 // ── CAFE INFO ──

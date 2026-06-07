@@ -554,7 +554,10 @@ def api_logout():
 @app.route('/api/me')
 def api_me():
     if 'user' in session:
-        return jsonify({'ok': True, 'username': session['user'], 'role': session.get('role', 'manager')})
+        result = {'ok': True, 'username': session['user'], 'role': session.get('role', 'manager')}
+        if 'original_superadmin' in session:
+            result['impersonating'] = True
+        return jsonify(result)
     return jsonify({'ok': False}), 401
 
 # ────────────────────────────────────────────────────────────────
@@ -1133,6 +1136,34 @@ def api_superadmin_stats():
 # ────────────────────────────────────────────────────────────────
 # AUDİT LOG
 # ────────────────────────────────────────────────────────────────
+
+@app.route('/api/superadmin/impersonate/<username>', methods=['POST'])
+@superadmin_required
+def api_impersonate(username):
+    users = load_users()
+    if username not in users:
+        return jsonify({'error': 'İstifadəçi tapılmadı'}), 404
+    if users[username].get('role') == 'superadmin':
+        return jsonify({'error': 'Superadmin özü-özünü təqlid edə bilməz'}), 400
+    original = session['user']
+    session['original_superadmin'] = original
+    session['impersonating_as'] = username
+    session['user'] = username
+    session['role'] = users[username].get('role', 'manager')
+    log_action(original, 'impersonate_start', {'target': username}, request.remote_addr)
+    return jsonify({'ok': True, 'username': username, 'role': session['role']})
+
+@app.route('/api/superadmin/unimpersonate', methods=['POST'])
+@login_required
+def api_unimpersonate():
+    original = session.pop('original_superadmin', None)
+    target = session.pop('impersonating_as', None)
+    if not original:
+        return jsonify({'error': 'Aktiv impersonasiya yoxdur'}), 400
+    session['user'] = original
+    session['role'] = 'superadmin'
+    log_action(original, 'impersonate_end', {'was': target}, request.remote_addr)
+    return jsonify({'ok': True, 'username': original, 'role': 'superadmin'})
 
 @app.route('/api/admin/audit-log')
 @superadmin_required
