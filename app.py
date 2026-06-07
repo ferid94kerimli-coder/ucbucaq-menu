@@ -66,47 +66,28 @@ def _set_cached_data(username: str, data: dict) -> None:
 def _invalidate_cache(username: str) -> None:
     _data_cache.pop(username, None)
 
-# ── GITHUB PAGES PUSH ──
-_GH_TOKEN = os.environ.get('GITHUB_TOKEN', '')
-_GH_REPO  = os.environ.get('GITHUB_PAGES_REPO', '')
-_GH_BASE  = 'https://ferid94kerimli-coder.github.io/ucbucaq-menu-pages'
+# ── CLOUDFLARE WORKER PUSH ──
+_CF_WORKER_URL    = 'https://qr-menu-worker.qr-menu-az.workers.dev'
+_CF_INTERNAL_SECRET = os.environ.get('CF_INTERNAL_SECRET', '')
 
-def _push_static_menu(username: str, html: str) -> None:
-    """Rendered menu HTML-ini GitHub Pages repo-suna push edir (background thread)."""
-    if not _GH_TOKEN or not _GH_REPO:
+def _push_to_cf_worker(username: str, html: str) -> None:
+    if not _CF_INTERNAL_SECRET:
         return
     try:
-        path     = f'menu/{username}.html'
-        api_url  = f'https://api.github.com/repos/{_GH_REPO}/contents/{path}'
-        headers  = {
-            'Authorization': f'token {_GH_TOKEN}',
-            'Content-Type':  'application/json',
-            'User-Agent':    'qr-menu-flask'
-        }
-        # Mövcud faylın SHA-sını al (update üçün lazımdır)
-        sha = None
-        try:
-            req = _urllib.Request(api_url, headers=headers)
-            with _urllib.urlopen(req, timeout=8) as r:
-                sha = json.loads(r.read()).get('sha')
-        except Exception:
-            pass
-
-        content_b64 = base64.b64encode(html.encode('utf-8')).decode('ascii')
-        payload = {'message': f'menu: update {username}', 'content': content_b64}
-        if sha:
-            payload['sha'] = sha
-
+        api_url = f'{_CF_WORKER_URL}/internal/menu/{username}'
         req = _urllib.Request(api_url,
-            data=json.dumps(payload).encode(),
-            headers=headers, method='PUT')
+            data=html.encode('utf-8'),
+            headers={
+                'X-Internal-Secret': _CF_INTERNAL_SECRET,
+                'Content-Type': 'text/html; charset=utf-8',
+            },
+            method='PUT')
         with _urllib.urlopen(req, timeout=10):
             pass
     except Exception:
-        pass  # Push uğursuz olsa belə menyu normal işləyir
+        pass
 
 def _push_static_menu_async(username: str) -> None:
-    """Menu HTML-ini render edib arxa fonda GitHub-a push edir."""
     try:
         cached = _get_cached_data(username)
         if cached is None:
@@ -124,7 +105,7 @@ def _push_static_menu_async(username: str) -> None:
             html = render_template('menu.html',
                 menu_user=username,
                 embedded_data=json.dumps(pub, ensure_ascii=False))
-        _push_static_menu(username, html)
+        _push_to_cf_worker(username, html)
     except Exception:
         pass
 
