@@ -1111,9 +1111,12 @@ def api_superadmin_stats():
                    COALESCE(ud.data->'cafe'->>'nameAz', u.username) AS name,
                    COALESCE((ud.data->'stats'->'opens'->>'total')::int, 0) AS opens,
                    ud.data->'stats'->'clicks' AS clicks,
-                   ud.data->'stats'->'cats'   AS cats
+                   ud.data->'stats'->'cats'   AS cats,
+                   MAX(al.ts) AS last_active
             FROM users u
             LEFT JOIN user_data ud ON u.username = ud.username
+            LEFT JOIN audit_log al ON u.username = al.username
+            GROUP BY u.username, u.is_active, name, opens, clicks, cats
             ORDER BY opens DESC
         """)
         rows = cur.fetchall()
@@ -1127,6 +1130,7 @@ def api_superadmin_stats():
             'name': r['name'],
             'opens': r['opens'],
             'is_active': r['is_active'],
+            'last_active': r['last_active'].isoformat() if r['last_active'] else None,
             'totalClicks': sum(int(v) for v in clicks.values()),
             'topItems': sorted(clicks.items(), key=lambda x: -int(x[1]))[:5],
             'topCats': sorted(cats.items(), key=lambda x: -int(x[1]))[:5],

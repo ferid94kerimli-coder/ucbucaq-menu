@@ -289,6 +289,32 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
 </head>
 <body>
 
+<!-- RESTORAN ƏTRAFLI MODALI -->
+<div id="restaurant-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:2500;align-items:center;justify-content:center;backdrop-filter:blur(4px)" onclick="if(event.target===this)closeRestaurantModal()">
+  <div style="background:var(--card);border-radius:16px;padding:1.5rem;width:480px;max-width:94vw;max-height:82vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:popIn 0.2s ease both">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.2rem">
+      <div>
+        <div id="rm-name" style="font-size:1.05rem;font-weight:600;color:var(--text)"></div>
+        <div id="rm-username" style="font-size:0.78rem;color:var(--muted);margin-top:2px"></div>
+      </div>
+      <button onclick="closeRestaurantModal()" style="background:none;border:none;font-size:1.2rem;color:var(--muted);cursor:pointer;padding:0;line-height:1">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem">
+      <div class="stat-card" style="padding:0.75rem 1rem"><div class="stat-label" style="font-size:0.7rem">Açılma</div><div id="rm-opens" style="font-size:1.2rem;font-weight:700;color:var(--accent)"></div></div>
+      <div class="stat-card" style="padding:0.75rem 1rem"><div class="stat-label" style="font-size:0.7rem">Kliklər</div><div id="rm-clicks" style="font-size:1.2rem;font-weight:700;color:var(--text)"></div></div>
+      <div class="stat-card" style="padding:0.75rem 1rem"><div class="stat-label" style="font-size:0.7rem">Son fəaliyyət</div><div id="rm-last-active" style="font-size:0.78rem;font-weight:500;color:var(--text);margin-top:2px"></div></div>
+    </div>
+    <div style="margin-bottom:1.1rem">
+      <div style="font-size:0.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:0.65rem">Ən çox baxılan məhsullar</div>
+      <div id="rm-top-items"></div>
+    </div>
+    <div>
+      <div style="font-size:0.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:0.65rem">Ən aktiv kateqoriyalar</div>
+      <div id="rm-top-cats"></div>
+    </div>
+  </div>
+</div>
+
 <!-- TƏSDİQ MODALI -->
 <div id="confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
   <div style="background:var(--card);border-radius:16px;padding:1.75rem;width:340px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:popIn 0.2s ease both">
@@ -1190,25 +1216,28 @@ function renderDashboard() {
   });
 }
 
+var _saRestaurantsData = [];
+
 async function renderSuperadminDashboard() {
   var tbody = document.getElementById('sa-restaurants-body');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:1rem">Yüklənir...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem">Yüklənir...</td></tr>';
   try {
     var res = await fetch('/api/superadmin/stats');
     var data = await res.json();
     if (!data.ok) throw new Error('not ok');
+    _saRestaurantsData = data.restaurants || [];
     document.getElementById('sa-stat-restaurants').textContent = data.totalRestaurants || 0;
     document.getElementById('sa-stat-opens').textContent = data.totalOpens || 0;
-    var totalClicks = (data.restaurants || []).reduce(function(s,r){ return s + (r.totalClicks||0); }, 0);
+    var totalClicks = _saRestaurantsData.reduce(function(s,r){ return s + (r.totalClicks||0); }, 0);
     document.getElementById('sa-stat-clicks').textContent = totalClicks;
     tbody.innerHTML = '';
-    (data.restaurants || []).slice().sort(function(a,b){ return (b.opens||0)-(a.opens||0); }).forEach(function(r){
+    _saRestaurantsData.slice().sort(function(a,b){ return (b.opens||0)-(a.opens||0); }).forEach(function(r){
       var menuUrl = 'https://qr-menu-worker.qr-menu-az.workers.dev/menu/' + encodeURIComponent(r.username);
       var safeU = r.username.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       var isActive = r.is_active !== false;
       var tr = document.createElement('tr');
-      tr.innerHTML = '<td style="font-weight:500">'+(isActive?'':'<span style="color:var(--muted);text-decoration:line-through">')+r.username+(isActive?'':'</span>')+'</td>'
+      tr.innerHTML = '<td><button onclick="openRestaurantModal(\''+safeU+'\')" style="background:none;border:none;cursor:pointer;font-weight:600;color:var(--accent);font-size:0.85rem;padding:0;text-decoration:underline;text-underline-offset:2px;'+(isActive?'':'text-decoration:line-through;color:var(--muted)')+'">'+r.username+'</button></td>'
         +'<td style="color:var(--muted);font-size:0.85rem">'+(r.name||'—')+'</td>'
         +'<td style="color:var(--accent);font-weight:500">'+(r.opens||0)+'</td>'
         +'<td style="color:var(--muted)">'+(r.totalClicks||0)+'</td>'
@@ -1220,12 +1249,46 @@ async function renderSuperadminDashboard() {
         +'</td>';
       tbody.appendChild(tr);
     });
-    if (!(data.restaurants||[]).length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:1rem">Məlumat yoxdur</td></tr>';
+    if (!_saRestaurantsData.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem">Məlumat yoxdur</td></tr>';
     }
   } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:1rem">Yüklənmə xətası</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem">Yüklənmə xətası</td></tr>';
   }
+}
+
+function openRestaurantModal(username) {
+  var r = _saRestaurantsData.find(function(x){ return x.username === username; });
+  if (!r) return;
+  document.getElementById('rm-name').textContent = r.name || username;
+  document.getElementById('rm-username').textContent = '@' + username;
+  document.getElementById('rm-opens').textContent = r.opens || 0;
+  document.getElementById('rm-clicks').textContent = r.totalClicks || 0;
+  document.getElementById('rm-last-active').textContent = r.last_active ? auditTimeAgo(r.last_active) : '—';
+
+  function barList(items, color) {
+    if (!items || !items.length) return '<p style="color:var(--muted);font-size:0.82rem;margin:0">Məlumat yoxdur</p>';
+    var max = parseInt(items[0][1]) || 1;
+    return items.map(function(item, i) {
+      var pct = Math.round(parseInt(item[1]) / max * 100);
+      return '<div style="margin-bottom:8px">'
+        +'<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:3px">'
+        +'<span style="color:var(--text)">'+(i+1)+'. '+item[0]+'</span>'
+        +'<span style="font-weight:600;color:'+color+'">'+item[1]+'</span>'
+        +'</div>'
+        +'<div style="background:var(--border);border-radius:4px;height:4px">'
+        +'<div style="background:'+color+';height:4px;border-radius:4px;width:'+pct+'%;transition:width 0.4s"></div>'
+        +'</div></div>';
+    }).join('');
+  }
+
+  document.getElementById('rm-top-items').innerHTML = barList(r.topItems, 'var(--accent)');
+  document.getElementById('rm-top-cats').innerHTML  = barList(r.topCats,  'var(--muted)');
+  document.getElementById('restaurant-modal').style.display = 'flex';
+}
+
+function closeRestaurantModal() {
+  document.getElementById('restaurant-modal').style.display = 'none';
 }
 
 async function doToggleActive(username, activate) {
