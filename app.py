@@ -657,6 +657,10 @@ def api_upload_logo():
             db = row['data'] if row else copy.deepcopy(DEFAULT_MENU_DATA)
             db['cafe']['logo'] = url
             _upsert_user_data(cur, username, db)
+        _invalidate_cache(username)
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+        log_action(username, 'upload_logo', {'url': url}, ip)
+        threading.Thread(target=_push_static_menu_async, args=(username,), daemon=True).start()
         return jsonify({'ok': True, 'url': url})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
