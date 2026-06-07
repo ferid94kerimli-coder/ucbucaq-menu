@@ -111,7 +111,7 @@ def _push_static_menu_async(username: str) -> None:
             return
         items_with_img = [i.get('nameAz','?') for i in data.get('items',[]) if i.get('image') or i.get('img')]
         print(f'[CF PUSH] {username}: {len(data.get("items",[]))} items, {len(items_with_img)} with image: {items_with_img[:5]}')
-        pub = {k: data[k] for k in ('cafe', 'categories', 'items', 'theme') if k in data}
+        pub = {k: data[k] for k in ('cafe', 'categories', 'items', 'theme', 'font', 'layout') if k in data}
         pub = _strip_b64(pub)
         with app.app_context():
             html = render_template('menu.html',
@@ -481,7 +481,7 @@ def menu_user(username):
         if cached is None:
             cached = load_user_data(username)
             _set_cached_data(username, cached)
-        pub = {k: cached[k] for k in ('cafe', 'categories', 'items', 'theme') if k in cached}
+        pub = {k: cached[k] for k in ('cafe', 'categories', 'items', 'theme', 'font', 'layout') if k in cached}
         pub = _strip_b64(pub)
         embedded = json.dumps(pub, ensure_ascii=False)
     return render_template('menu.html', menu_user=username, embedded_data=embedded)
@@ -558,7 +558,7 @@ def api_get_data():
         if cached is None:
             cached = load_user_data(username)
             _set_cached_data(username, cached)
-        data = {k: cached[k] for k in ('cafe', 'categories', 'items', 'theme') if k in cached}
+        data = {k: cached[k] for k in ('cafe', 'categories', 'items', 'theme', 'font', 'layout') if k in cached}
         resp = make_response(jsonify(data))
         resp.headers['Cache-Control'] = 'public, max-age=30'
         return resp
@@ -581,7 +581,7 @@ def api_save_data():
         if sub_expires and sub_expires < datetime.now(timezone.utc):
             return jsonify({'error': 'Abunəlik bitib', 'code': 'sub_expired'}), 402
     incoming = request.json or {}
-    allowed_keys = {'cafe', 'categories', 'items', 'theme'}
+    allowed_keys = {'cafe', 'categories', 'items', 'theme', 'font', 'layout'}
     with db_conn() as conn:
         cur = conn.cursor()
         cur.execute("SELECT data FROM user_data WHERE username = %s FOR UPDATE", (username,))

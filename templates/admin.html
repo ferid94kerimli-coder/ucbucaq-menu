@@ -44,7 +44,6 @@ body.admin-dark .drawer-close { background: #2a2a2a; color: var(--muted); }
 body.admin-dark .drawer-close:hover { background: #333; }
 body.admin-dark .items-table tr:hover td { background: rgba(255,255,255,0.03); }
 body.admin-dark .login-card { background: rgba(255,255,255,0.03); }
-body.admin-dark #custom-css-input { background: #1a1a1a; color: var(--text); }
 body.admin-dark .img-preview-wrap { background: #222; }
 body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
 
@@ -715,13 +714,6 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
     <div data-i18n="layoutTitle" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">📐 Kart layoutu</div>
     <div id="layout-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:2rem;"></div>
 
-    <!-- CUSTOM CSS -->
-    <div data-i18n="customCss" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:0.75rem">✏️ Özel CSS</div>
-    <textarea id="custom-css-input" placeholder="/* Özel CSS kodunuzu buraya yazın */" rows="8" style="width:100%;font-family:monospace;font-size:0.82rem;padding:0.75rem;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);resize:vertical;line-height:1.5;box-sizing:border-box"></textarea>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-      <button class="btn btn-sm btn-ghost" onclick="clearCustomCss()" style="border:1px solid var(--danger);color:var(--danger)">Sil</button>
-      <button class="btn btn-sm btn-primary" onclick="saveCustomCss()">Yadda saxla</button>
-    </div>
 
   </div>
 
@@ -2581,36 +2573,12 @@ function applyLayout(layoutId) {
   showToast(interfaceLang==='en' ? '"'+(l.nameEn||l.name)+'" layout applied' : '"'+l.name+'" layoutu t\u0259tbiq edildi');
 }
 
-// ── CUSTOM CSS ──
-function loadCustomCssInput() {
-  var saved = (STATE && STATE.customCss) || '';
-  document.getElementById('custom-css-input').value = saved;
-}
-
-function saveCustomCss() {
-  var css = document.getElementById('custom-css-input').value.trim();
-  // Custom CSS STATE-ə yazılır
-  STATE.customCss = css;
-  saveData();
-  showToast(interfaceLang==='en'?'Custom CSS saved':'Özel CSS yadda saxlandı');
-}
-
-function clearCustomCss() {
-  showConfirm(interfaceLang==='en'?'Clear Custom CSS':'Özel CSS-i sil', interfaceLang==='en'?'All custom CSS will be removed.':'Bütün özel CSS silinəcək.', function(){
-    document.getElementById('custom-css-input').value = '';
-    STATE.customCss = '';
-    saveData();
-    showToast(interfaceLang==='en'?'Custom CSS cleared':'Özel CSS silindi');
-  }, '🎨', interfaceLang==='en'?'Clear':'Sil');
-}
-
-// Override renderThemePage to also render font/layout/css
+// Override renderThemePage to also render font/layout
 var _origRenderThemePage = renderThemePage;
 renderThemePage = function() {
   _origRenderThemePage();
   renderFontGrid();
   renderLayoutGrid();
-  loadCustomCssInput();
 };
 
 // ── QR ──
@@ -2806,7 +2774,6 @@ var I18N = {
     colorThemes: '🎨 Rəng temaları',
     fontTitle: '🔤 Şrift seçimi',
     layoutTitle: '📐 Kart layoutu',
-    customCss: '✏️ Özel CSS',
     // QR yeni açarlar
     qrSectionTitle: '📷 Menyu QR Kodu',
     qrScanLabel: 'Menyu üçün skan edin',
@@ -2978,7 +2945,6 @@ var I18N = {
     colorThemes: '🎨 Color Themes',
     fontTitle: '🔤 Font Selection',
     layoutTitle: '📐 Card Layout',
-    customCss: '✏️ Custom CSS',
     // QR new keys
     qrSectionTitle: '📷 Menu QR Code',
     qrScanLabel: 'Scan for menu',
