@@ -80,6 +80,7 @@ def _push_to_cf_worker(username: str, html: str) -> None:
             headers={
                 'X-Internal-Secret': _CF_INTERNAL_SECRET,
                 'Content-Type': 'text/html; charset=utf-8',
+                'User-Agent': 'qr-menu-flask/1.0',
             },
             method='PUT')
         with _urllib.urlopen(req, timeout=10):
