@@ -335,6 +335,7 @@
   }
   .badge-new { background: #eaf3de; color: #3B6D11; }
   .badge-hot { background: #FAECE7; color: #993C1D; }
+  .badge-seasonal { background: #e0f0ff; color: #1a5fa8; }
 
   /* ── FOOTER ── */
   .footer {
@@ -1020,11 +1021,13 @@ function openModal(item) {
   if (item.badge && item.badge !== 'null') {
     const label = item.badge === 'new'
       ? (lang === 'az' ? 'Yeni məhsul' : 'New item')
+      : item.badge === 'seasonal'
+      ? (lang === 'az' ? 'Mövsümi məhsul' : 'Seasonal item')
       : (lang === 'az' ? 'Məşhur seçim' : 'Popular choice');
     const span = document.createElement('span');
     span.className = 'modal-tag';
-    span.style.background = item.badge === 'new' ? '#eaf3de' : '#FAECE7';
-    span.style.color = item.badge === 'new' ? '#3B6D11' : '#993C1D';
+    span.style.background = item.badge === 'new' ? '#eaf3de' : item.badge === 'seasonal' ? '#e0f0ff' : '#FAECE7';
+    span.style.color = item.badge === 'new' ? '#3B6D11' : item.badge === 'seasonal' ? '#1a5fa8' : '#993C1D';
     span.textContent = label;
     tagsEl.appendChild(span);
   }
@@ -1142,6 +1145,8 @@ function render() {
         ? `<span class="badge badge-new">${lang==='az'?'Yeni':'New'}</span>`
         : badgeVal === 'hot'
         ? `<span class="badge badge-hot">${lang==='az'?'Məşhur':'Popular'}</span>`
+        : badgeVal === 'seasonal'
+        ? `<span class="badge badge-seasonal">${lang==='az'?'Mövsümi':'Seasonal'}</span>`
         : '';
       const name = lang === 'az' ? item.nameAz : (item.nameEn || item.nameAz);
       const desc = lang === 'az' ? (item.ingredientsAz || item.ingredients || '') : (item.ingredientsEn || item.ingredientsAz || item.ingredients || '');
@@ -1228,6 +1233,8 @@ function renderSearch() {
         ? `<span class="badge badge-new">${lang==='az'?'Yeni':'New'}</span>`
         : badgeVal === 'hot'
         ? `<span class="badge badge-hot">${lang==='az'?'Məşhur':'Popular'}</span>`
+        : badgeVal === 'seasonal'
+        ? `<span class="badge badge-seasonal">${lang==='az'?'Mövsümi':'Seasonal'}</span>`
         : '';
       const name = lang === 'az' ? item.nameAz : (item.nameEn || item.nameAz);
       const desc = lang === 'az' ? (item.ingredientsAz || item.ingredients || '') : (item.ingredientsEn || item.ingredientsAz || item.ingredients || '');

@@ -147,6 +147,7 @@ textarea { resize:vertical;min-height:70px; }
 .badge-pill { font-size:0.65rem;padding:2px 7px;border-radius:8px;font-weight:500; }
 .badge-pill.new { background:#eaf3de;color:#3B6D11; }
 .badge-pill.hot { background:#FAECE7;color:#993C1D; }
+.badge-pill.seasonal { background:#e0f0ff;color:#1a5fa8; }
 .actions { display:flex;gap:6px; }
 
 /* DRAWER */
@@ -853,7 +854,7 @@ input[type=file] { display:none; }
       <div class="form-group"><label id="label-ingredients-az">Tərkib (AZ)</label><textarea id="f-ingredients-az" placeholder="Süd, şəkər, vanil..."></textarea></div>
       <div class="form-group"><label id="label-ingredients-en">Ingredients (EN)</label><textarea id="f-ingredients-en" placeholder="Milk, sugar, vanilla..."></textarea></div>
       <div class="form-group"><label id="label-price">Qiymət (AZN)</label><input type="text" id="f-price" placeholder="3.50"></div>
-      <div class="form-group"><label id="label-badge">Badge</label><select id="f-badge"><option value="null">Yoxdur</option><option value="new">Yeni</option><option value="hot">Məşhur</option></select></div>
+      <div class="form-group"><label id="label-badge">Badge</label><select id="f-badge"><option value="null">Yoxdur</option><option value="new">Yeni</option><option value="hot">Məşhur</option><option value="seasonal">Mövsümi</option></select></div>
       <div class="form-group"><label id="label-cat">Kateqoriya</label><select id="f-cat"></select></div>
       <div class="form-group full">
         <label id="label-img">Şəkil</label>
@@ -1212,7 +1213,7 @@ function renderDashboard() {
     var cat = STATE.categories.find(function(c){ return c.id === item.catId; });
     var iName = dbAz ? item.nameAz : (item.nameEn || item.nameAz);
     var cName = cat ? (dbAz ? cat.labelAz : (cat.labelEn || cat.labelAz)) : '';
-    var bdgLabel = item.badge==='new' ? (dbAz?'Yeni':'New') : (dbAz?'Məşhur':'Popular');
+    var bdgLabel = item.badge==='new' ? (dbAz?'Yeni':'New') : item.badge==='seasonal' ? (dbAz?'Mövsümi':'Seasonal') : (dbAz?'Məşhur':'Popular');
     var tr = document.createElement('tr');
     tr.innerHTML = '<td><div class="item-cell"><div class="item-thumb" style="background:'+(cat?cat.bg:'#f5f0eb')+'">'+(item.image||item.img ? '<img src="'+(item.image||item.img)+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">' : ((item.icon && item.icon!=="undefined") ? item.icon : '🍽️'))+'</div><div>'+iName+'</div></div></td><td style="color:var(--muted);font-size:0.8rem">'+cName+'</td><td style="font-weight:500;color:var(--accent)">'+item.price+' AZN</td><td>'+(item.badge&&item.badge!=='null'?('<span class="badge-pill '+item.badge+'">'+bdgLabel+'</span>'):'—')+'</td>';
     tbody.appendChild(tr);
@@ -2818,10 +2819,11 @@ function applyI18n(lang) {
 
   // 9. Badge select options
   var badge = document.getElementById('f-badge');
-  if (badge && badge.options.length >= 3) {
+  if (badge && badge.options.length >= 4) {
     badge.options[0].text = az ? 'Yoxdur' : 'None';
     badge.options[1].text = az ? 'Yeni' : 'New';
     badge.options[2].text = az ? 'Məşhur' : 'Popular';
+    badge.options[3].text = az ? 'Mövsümi' : 'Seasonal';
   }
 
   // 10. Drawer düymələri
