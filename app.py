@@ -614,6 +614,13 @@ def api_save_data():
     threading.Thread(target=_push_static_menu_async, args=(username,), daemon=True).start()
     return jsonify({'ok': True})
 
+@app.route('/api/sync', methods=['POST'])
+@login_required
+def api_sync_menu():
+    username = current_user()
+    threading.Thread(target=_push_static_menu_async, args=(username,), daemon=True).start()
+    return jsonify({'ok': True})
+
 # ────────────────────────────────────────────────────────────────
 # ŞƏKİL YÜKLƏMƏ — Cloudinary
 # ────────────────────────────────────────────────────────────────

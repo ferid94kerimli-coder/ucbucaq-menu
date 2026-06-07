@@ -816,6 +816,15 @@ input[type=file] { display:none; }
         </div>
       </div>
 
+      <!-- MENYU SİNXRONIZASİYA -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1.25rem;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:0.85rem;font-weight:500;color:var(--text)">🔄 <span data-i18n="syncMenu">Menyunu sinxronlaşdır</span></div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px" data-i18n="syncMenuNote">Şəkillər görünmürsə bunu basın</div>
+        </div>
+        <button class="btn btn-sm btn-ghost" onclick="syncMenu()" style="border:2px solid var(--border)" data-i18n="syncNow">↺ Sinxronlaşdır</button>
+      </div>
+
       <!-- ŞİFRƏ DƏYİŞ -->
       <div style="padding:0.85rem 1.25rem">
         <div style="font-size:0.85rem;font-weight:500;color:var(--text);margin-bottom:0.75rem">🔒 <span data-i18n="changePass">Şifrə dəyiş</span></div>
@@ -1893,6 +1902,23 @@ function _drawAnalytics(data) {
   });
 }
 
+function syncMenu() {
+  var az = interfaceLang !== 'en';
+  var btn = event && event.target;
+  if (btn) { btn.disabled = true; btn.textContent = az ? '⏳ ...' : '⏳ ...'; }
+  fetch('/api/sync', {method:'POST'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (btn) { btn.disabled = false; btn.textContent = az ? '↺ Sinxronlaşdır' : '↺ Sync'; }
+      if (d.ok) showToast(az ? '✅ Menyu sinxronlaşdırıldı' : '✅ Menu synced');
+      else showToast('❌ ' + (d.error || 'Error'));
+    })
+    .catch(function(){
+      if (btn) { btn.disabled = false; btn.textContent = az ? '↺ Sinxronlaşdır' : '↺ Sync'; }
+      showToast(az ? '❌ Xəta baş verdi' : '❌ Error');
+    });
+}
+
 function clearStats() {
   var az = interfaceLang !== 'en';
   showConfirm(
@@ -2573,6 +2599,9 @@ var I18N = {
     backupDownload: '⬇️ Yüklə',
     backupRestore: 'Bərpa et',
     backupRestoreNote: 'JSON faylı seçin',
+    syncMenu: 'Menyunu sinxronlaşdır',
+    syncMenuNote: 'Şəkillər görünmürsə bunu basın',
+    syncNow: '↺ Sinxronlaşdır',
     auditLog: '📋 Hərəkət jurnalı',
     auditLogNote: 'Son 10 gündəki dəyişikliklər',
     auditAllUsers: 'Hamısı',
@@ -2741,6 +2770,9 @@ var I18N = {
     backupDownload: '⬇️ Download',
     backupRestore: 'Restore',
     backupRestoreNote: 'Select JSON file',
+    syncMenu: 'Sync Menu',
+    syncMenuNote: 'Press this if images are not showing',
+    syncNow: '↺ Sync',
     auditLog: '📋 Activity Log',
     auditLogNote: 'Changes in the last 10 days',
     auditAllUsers: 'All users',
