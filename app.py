@@ -805,8 +805,14 @@ def api_get_user_info(username):
 
 _ALLOWED_STAT_TYPES = {'click', 'open', 'cat'}
 
-@app.route('/api/stats', methods=['POST'])
+@app.route('/api/stats', methods=['POST', 'OPTIONS'])
 def api_track_stats():
+    if request.method == 'OPTIONS':
+        resp = make_response('', 204)
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Access-Control-Allow-Methods'] = 'POST'
+        resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return resp
     data = request.json or {}
     username = data.get('user') or request.args.get('user') or current_user()
     if not username:
@@ -854,7 +860,9 @@ def api_track_stats():
                 ) WHERE username = %s
             """, (item_key, item_key, username))
 
-    return jsonify({'ok': True})
+    resp = jsonify({'ok': True})
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
 
 @app.route('/api/stats')
 @login_required
