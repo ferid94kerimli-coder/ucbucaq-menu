@@ -329,9 +329,9 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
         <button onclick="clearSubscription()"       class="btn btn-sm btn-ghost" style="border:1px solid #dc2626;color:#dc2626;font-size:0.75rem">Sil</button>
       </div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-        <span style="font-size:0.78rem;color:var(--muted);white-space:nowrap">+ </span>
-        <input type="number" id="rm-sub-months-input" min="1" max="120" placeholder="ay sayı" style="font-size:0.8rem;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);width:90px">
-        <button onclick="addSubscriptionMonthsCustom()" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem;white-space:nowrap">ay əlavə et</button>
+        <input type="number" id="rm-sub-amount-input" min="1" max="520" placeholder="say" style="font-size:0.8rem;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);width:72px">
+        <button onclick="addSubscriptionCustom('month')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem">ay əlavə et</button>
+        <button onclick="addSubscriptionCustom('week')"  class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem">həftə əlavə et</button>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <input type="date" id="rm-sub-date-input" style="font-size:0.8rem;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);flex:1">
@@ -1379,11 +1379,18 @@ async function _saveSubscription(isoDate) {
   renderSuperadminDashboard();
 }
 
-function addSubscriptionMonthsCustom() {
-  var val = parseInt(document.getElementById('rm-sub-months-input').value);
-  if (!val || val < 1) { showToast('Ay sayını daxil edin'); return; }
-  document.getElementById('rm-sub-months-input').value = '';
-  addSubscriptionMonths(val);
+function addSubscriptionCustom(unit) {
+  var val = parseInt(document.getElementById('rm-sub-amount-input').value);
+  if (!val || val < 1) { showToast('Say daxil edin'); return; }
+  document.getElementById('rm-sub-amount-input').value = '';
+  var r = _saRestaurantsData.find(function(x){ return x.username === _rmCurrentUsername; });
+  var base = (r && r.sub_expires && new Date(r.sub_expires) > new Date()) ? new Date(r.sub_expires) : new Date();
+  if (unit === 'month') {
+    base.setMonth(base.getMonth() + val);
+  } else {
+    base.setDate(base.getDate() + val * 7);
+  }
+  _saveSubscription(base.toISOString());
 }
 
 function addSubscriptionMonths(months) {
