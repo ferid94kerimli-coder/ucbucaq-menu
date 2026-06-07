@@ -21,7 +21,9 @@ jobs:
           from psycopg2.extras import RealDictCursor
           from datetime import date
 
-          conn = psycopg2.connect(os.environ['DATABASE_URL'], cursor_factory=RealDictCursor)
+          # Pooler endpoint-i direct endpoint-ə çevir (IPv4 üçün)
+          db_url = os.environ['DATABASE_URL'].replace('-pooler.', '.')
+          conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
           cur = conn.cursor()
 
           backup = {}
