@@ -884,6 +884,8 @@ function loadFallbackState() {
 }
 
 let lang = 'az', activeCat = 'all', searchQuery = '';
+const DAYS_AZ = ['Bazar ertəsi','Çərşənbə axşamı','Çərşənbə','Cümə axşamı','Cümə','Şənbə','Bazar'];
+const DAYS_EN = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 // STATE-i əvvəlcə fallback ilə başlat, API cavabı gəldikdə yenilənəcək
 let STATE = loadFallbackState();
 
@@ -1335,9 +1337,6 @@ if (!MENU_USER) {
 }
 
 // ── HOURS BADGE ──
-const DAYS_AZ = ['Bazar ertəsi','Çərşənbə axşamı','Çərşənbə','Cümə axşamı','Cümə','Şənbə','Bazar'];
-const DAYS_EN = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-
 function renderHoursBadge(cafe) {
   const wrap = document.getElementById('hours-badge');
   if (!wrap) return;
