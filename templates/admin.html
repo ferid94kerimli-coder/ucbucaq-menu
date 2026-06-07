@@ -1409,6 +1409,7 @@ async function renderSubscriptionPage() {
         +'<select id="sub-unit-'+safeU+'" style="font-size:0.75rem;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">'
         +'<option value="week">Həftə</option>'
         +'<option value="month" selected>Ay</option>'
+        +'<option value="unlimited">Məhdudiyyətsiz</option>'
         +'</select>'
         +'<button onclick="subAddPeriod(\''+safeU+'\')" class="btn btn-sm btn-primary" style="font-size:0.72rem;padding:3px 8px">Əlavə et</button>'
         +'<button onclick="subAddTrial(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:3px 8px;color:var(--text)" title="1 həftəlik trial">Trial</button>'
@@ -1434,8 +1435,12 @@ async function _subSave(username, isoDate, label) {
 async function subAddPeriod(username) {
   var amtEl  = document.getElementById('sub-amt-'  + username);
   var unitEl = document.getElementById('sub-unit-' + username);
-  var val  = parseInt(amtEl ? amtEl.value : 0);
   var unit = unitEl ? unitEl.value : 'month';
+  if (unit === 'unlimited') {
+    await _subSave(username, null, 'məhdudiyyətsiz edildi');
+    return;
+  }
+  var val = parseInt(amtEl ? amtEl.value : 0);
   if (!val || val < 1) { showToast('Say daxil edin'); return; }
   var r = _saRestaurantsData.find(function(x){ return x.username === username; });
   var base = (r && r.sub_expires && new Date(r.sub_expires) > new Date()) ? new Date(r.sub_expires) : new Date();
