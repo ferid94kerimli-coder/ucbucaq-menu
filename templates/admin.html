@@ -11,14 +11,14 @@
   --accent: #C9A84C; --accent-dark: #a8872e;
   --bg: #F5F3F0; --sidebar: #1C1917; --card: #FFFFFF;
   --text: #1A1210; --muted: #8B7355; --border: rgba(0,0,0,0.08);
-  --danger: #dc2626; --success: #16a34a; --radius: 14px;
+  --danger: #dc2626; --success: #16a34a; --warn: #d97706; --radius: 14px;
   --input-bg: #fff;
 }
 /* DARK ADMIN THEME */
 body.admin-dark {
   --bg: #0F0F0F; --card: #1A1A1A; --text: #E8E3DC;
   --muted: #9A8F82; --border: rgba(255,255,255,0.08);
-  --input-bg: #252525; --sidebar: #111111;
+  --input-bg: #252525; --sidebar: #111111; --success: #22c55e; --danger: #f87171; --warn: #fbbf24;
 }
 body.admin-dark input[type=text],
 body.admin-dark input[type=tel],
@@ -882,8 +882,8 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
     </div>
     <div class="card" style="padding:0;overflow:hidden">
       <table class="items-table" id="sub-table">
-        <thead><tr><th>Restoran</th><th>Status</th><th>Bitiş tarixi</th><th>Qalan</th><th>Əlavə et</th><th></th></tr></thead>
-        <tbody id="sub-table-body"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Yüklənir...</td></tr></tbody>
+        <thead><tr><th>Restoran</th><th>Status</th><th>Bitiş tarixi</th><th>Qalan</th><th>Əlavə et</th></tr></thead>
+        <tbody id="sub-table-body"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Yüklənir...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1363,11 +1363,11 @@ async function _saveSubscription(isoDate) {
 async function renderSubscriptionPage() {
   var tbody = document.getElementById('sub-table-body');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Yüklənir...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Yüklənir...</td></tr>';
   var list = _saRestaurantsData.length ? _saRestaurantsData : await fetch('/api/superadmin/stats').then(function(r){ return r.json(); }).then(function(d){ _saRestaurantsData = d.restaurants||[]; return _saRestaurantsData; }).catch(function(){ return []; });
   tbody.innerHTML = '';
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Məlumat yoxdur</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Məlumat yoxdur</td></tr>';
     return;
   }
   list.slice().sort(function(a,b){
@@ -1379,26 +1379,26 @@ async function renderSubscriptionPage() {
     var now = new Date();
     var statusHtml, expiresStr, daysHtml;
     if (!r.sub_expires) {
-      statusHtml  = '<span style="color:#16a34a;font-size:0.75rem;font-weight:600">∞ Məhdudiyyətsiz</span>';
-      expiresStr  = '—';
-      daysHtml    = '—';
+      statusHtml  = '<span style="color:var(--success);font-size:0.75rem;font-weight:600">∞ Məhdudiyyətsiz</span>';
+      expiresStr  = '<span style="color:var(--muted)">—</span>';
+      daysHtml    = '<span style="color:var(--muted)">—</span>';
     } else {
       var exp  = new Date(r.sub_expires);
       var days = Math.ceil((exp - now) / 86400000);
       expiresStr = exp.toLocaleDateString('az-AZ', {day:'2-digit',month:'2-digit',year:'numeric'});
       if (days > 14) {
-        statusHtml = '<span style="color:#16a34a;font-size:0.75rem;font-weight:600">✓ Aktiv</span>';
-        daysHtml   = '<span style="color:#16a34a;font-size:0.8rem">'+days+' gün</span>';
+        statusHtml = '<span style="color:var(--success);font-size:0.75rem;font-weight:600">✓ Aktiv</span>';
+        daysHtml   = '<span style="color:var(--success);font-size:0.8rem">'+days+' gün</span>';
       } else if (days > 0) {
-        statusHtml = '<span style="color:#f59e0b;font-size:0.75rem;font-weight:600">⚠ Tezliklə bitir</span>';
-        daysHtml   = '<span style="color:#f59e0b;font-size:0.8rem;font-weight:600">'+days+' gün</span>';
+        statusHtml = '<span style="color:var(--warn);font-size:0.75rem;font-weight:600">⚠ Tezliklə bitir</span>';
+        daysHtml   = '<span style="color:var(--warn);font-size:0.8rem;font-weight:600">'+days+' gün</span>';
       } else {
-        statusHtml = '<span style="color:#dc2626;font-size:0.75rem;font-weight:600">✕ Bitib</span>';
-        daysHtml   = '<span style="color:#dc2626;font-size:0.8rem">—</span>';
+        statusHtml = '<span style="color:var(--danger);font-size:0.75rem;font-weight:600">✕ Bitib</span>';
+        daysHtml   = '<span style="color:var(--danger);font-size:0.8rem">—</span>';
       }
     }
     var tr = document.createElement('tr');
-    tr.innerHTML = '<td><button onclick="openRestaurantModal(\''+safeU+'\')" style="background:none;border:none;cursor:pointer;font-weight:600;color:var(--accent);font-size:0.85rem;padding:0;text-decoration:underline;text-underline-offset:2px">'+r.username+'</button><div style="font-size:0.75rem;color:var(--muted)">'+(r.name||'')+'</div></td>'
+    tr.innerHTML = '<td><div style="font-weight:600;color:var(--text);font-size:0.85rem">'+r.username+'</div><div style="font-size:0.75rem;color:var(--muted);margin-top:1px">'+(r.name||'')+'</div></td>'
       +'<td>'+statusHtml+'</td>'
       +'<td style="font-size:0.82rem;color:var(--text)">'+expiresStr+'</td>'
       +'<td>'+daysHtml+'</td>'
@@ -1410,10 +1410,9 @@ async function renderSubscriptionPage() {
         +'<option value="month" selected>Ay</option>'
         +'</select>'
         +'<button onclick="subAddPeriod(\''+safeU+'\')" class="btn btn-sm btn-primary" style="font-size:0.72rem;padding:3px 8px">Əlavə et</button>'
-        +'<button onclick="subAddTrial(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:3px 8px" title="1 həftəlik trial">Trial</button>'
+        +'<button onclick="subAddTrial(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:3px 8px;color:var(--text)" title="1 həftəlik trial">Trial</button>'
         +'</div>'
-      +'</td>'
-      +'<td><button onclick="openRestaurantModal(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:2px 7px">📊 Stat</button></td>';
+      +'</td>';
     tbody.appendChild(tr);
   });
 }
