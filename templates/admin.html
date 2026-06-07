@@ -1381,7 +1381,7 @@ function restoreBackup(input) {
           }
         })
         .catch(function() { showToast(interfaceLang==='en' ? '❌ Restore failed' : '❌ Bərpa uğursuz oldu'); });
-      }, '💾'
+      }, '💾', interfaceLang==='en' ? 'Restore' : 'Bərpa et'
     );
   };
   reader.readAsText(file);
@@ -2042,10 +2042,11 @@ function openPrintPreview(autoPrint) {
 
 // ── TƏSDİQ MODALI ──
 var _confirmCallback = null;
-function showConfirm(title, desc, callback, icon) {
+function showConfirm(title, desc, callback, icon, okLabel) {
   document.getElementById('confirm-title').textContent = title || 'Silmək istədiyinizdən əminsinizmi?';
   document.getElementById('confirm-desc').textContent  = desc  || '';
   document.getElementById('confirm-icon').textContent  = icon  || '🗑';
+  document.getElementById('confirm-ok-btn').textContent = okLabel || 'Sil';
   _confirmCallback = callback;
   var m = document.getElementById('confirm-modal');
   m.style.display = 'flex';
