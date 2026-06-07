@@ -2210,11 +2210,9 @@ renderThemePage = function() {
 
 // ── QR ──
 function getMyMenuUrl() {
-  // Giriş etmiş userin öz menyu URL-i: /menu?user=<username>
   var session = JSON.parse(sessionStorage.getItem('cafe_admin_session') || '{}');
   var username = session.username || '';
-  var base = window.location.origin + '/menu';
-  return username ? base + '?user=' + encodeURIComponent(username) : base;
+  return username ? 'https://qr-menu-az.up.railway.app/menu/' + encodeURIComponent(username) : 'https://qr-menu-az.up.railway.app/menu';
 }
 
 function generateQRCode(autoUrl) {
