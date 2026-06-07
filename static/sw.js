@@ -1,4 +1,4 @@
-const CACHE = 'menu-v1';
+const CACHE = 'menu-v2';
 const MAX_AGE = 5 * 60 * 1000; // 5 minutes
 
 self.addEventListener('install', e => {
