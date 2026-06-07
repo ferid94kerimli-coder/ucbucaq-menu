@@ -70,8 +70,18 @@ def _invalidate_cache(username: str) -> None:
 _CF_WORKER_URL    = 'https://qr-menu-worker.qr-menu-az.workers.dev'
 _CF_INTERNAL_SECRET = os.environ.get('CF_INTERNAL_SECRET', '')
 
+def _strip_b64(obj):
+    """data: base64 URL-lərini siliр, Cloudinary URL-lərini saxlayır."""
+    if isinstance(obj, dict):
+        return {k: ('' if isinstance(v, str) and v.startswith('data:') else _strip_b64(v))
+                for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_strip_b64(i) for i in obj]
+    return obj
+
 def _push_to_cf_worker(username: str, html: str) -> None:
     if not _CF_INTERNAL_SECRET:
+        print(f'[CF PUSH] SKIP {username}: CF_INTERNAL_SECRET not set')
         return
     try:
         api_url = f'{_CF_WORKER_URL}/internal/menu/{username}'
@@ -85,12 +95,12 @@ def _push_to_cf_worker(username: str, html: str) -> None:
             method='PUT')
         with _urllib.urlopen(req, timeout=10):
             pass
-    except Exception:
-        pass
+        print(f'[CF PUSH] OK {username} ({len(html)} bytes)')
+    except Exception as e:
+        print(f'[CF PUSH] ERROR {username}: {e}')
 
 def _push_static_menu_async(username: str) -> None:
     try:
-        # Cache-dən yox, birbaşa DB-dən oxu (save sonrası cache boş olur)
         data = None
         try:
             with db_conn() as conn:
@@ -99,30 +109,26 @@ def _push_static_menu_async(username: str) -> None:
                 row = cur.fetchone()
                 if row:
                     data = row['data']
-        except Exception:
-            pass
+        except Exception as e:
+            print(f'[CF PUSH] DB read error {username}: {e}')
         if data is None:
+            print(f'[CF PUSH] No data for {username}')
             return
+        items_with_img = [i.get('nameAz','?') for i in data.get('items',[]) if i.get('image') or i.get('img')]
+        print(f'[CF PUSH] {username}: {len(data.get("items",[]))} items, {len(items_with_img)} with image: {items_with_img[:5]}')
         pub = {k: data[k] for k in ('cafe', 'categories', 'items', 'theme') if k in data}
-        def _strip_b64(obj):
-            if isinstance(obj, dict):
-                return {k: ('' if isinstance(v, str) and v.startswith('data:') else _strip_b64(v))
-                        for k, v in obj.items()}
-            if isinstance(obj, list):
-                return [_strip_b64(i) for i in obj]
-            return obj
         pub = _strip_b64(pub)
         with app.app_context():
             html = render_template('menu.html',
                 menu_user=username,
                 embedded_data=json.dumps(pub, ensure_ascii=False))
-        # Relative static path-ları Railway absolute URL-ə çevir
         _railway = 'https://qr-menu-az.up.railway.app'
         html = html.replace('href="/static/', f'href="{_railway}/static/')
         html = html.replace('src="/static/', f'src="{_railway}/static/')
+        html = html.replace("fetch('/api/stats',", f"fetch('{_railway}/api/stats',")
         _push_to_cf_worker(username, html)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[CF PUSH] Unexpected error {username}: {e}')
 
 # ── USERS CACHE ──
 _users_cache: dict = {'data': None, 'ts': 0.0}
@@ -501,15 +507,6 @@ def menu_user(username):
             cached = load_user_data(username)
             _set_cached_data(username, cached)
         pub = {k: cached[k] for k in ('cafe', 'categories', 'items', 'theme') if k in cached}
-        # Strip base64 images from embedded data — they inflate HTML to MBs.
-        # Browser will show emoji icon instead; Cloudinary URLs are kept as-is.
-        def _strip_b64(obj):
-            if isinstance(obj, dict):
-                return {k: ('' if isinstance(v, str) and v.startswith('data:') else _strip_b64(v))
-                        for k, v in obj.items()}
-            if isinstance(obj, list):
-                return [_strip_b64(i) for i in obj]
-            return obj
         pub = _strip_b64(pub)
         embedded = json.dumps(pub, ensure_ascii=False)
     return render_template('menu.html', menu_user=username, embedded_data=embedded)
@@ -605,7 +602,7 @@ def api_save_data():
         db = row['data'] if row else copy.deepcopy(DEFAULT_MENU_DATA)
         changed = [k for k in incoming if k in allowed_keys]
         for key in changed:
-            db[key] = incoming[key]
+            db[key] = _strip_b64(incoming[key])
         _upsert_user_data(cur, username, db)
     _invalidate_cache(username)
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
@@ -740,6 +737,7 @@ def api_update_user_role(username):
     with db_conn() as conn:
         cur = conn.cursor()
         cur.execute("UPDATE users SET role = %s WHERE username = %s", (role, username))
+    _invalidate_users_cache()
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     log_action(current_user(), 'change_role', {'username': username, 'role': role}, ip)
     return jsonify({'ok': True})
@@ -1192,7 +1190,7 @@ def api_restore_data():
     if not isinstance(incoming, dict):
         return jsonify({'ok': False, 'error': 'Yanlış format'}), 400
     allowed_keys = {'cafe', 'categories', 'items', 'theme'}
-    data = {k: incoming[k] for k in allowed_keys if k in incoming}
+    data = {k: _strip_b64(incoming[k]) for k in allowed_keys if k in incoming}
     if not data:
         return jsonify({'ok': False, 'error': 'Məlumat tapılmadı'}), 400
     with db_conn() as conn:

@@ -53,5 +53,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: db-backup-${{ github.run_id }}
-          path: backup_*.dump
+          path: backup_*.json
           retention-days: 30
