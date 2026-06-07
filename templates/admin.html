@@ -328,6 +328,11 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
         <button onclick="addSubscriptionMonths(12)" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem">+1 il</button>
         <button onclick="clearSubscription()"       class="btn btn-sm btn-ghost" style="border:1px solid #dc2626;color:#dc2626;font-size:0.75rem">Sil</button>
       </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+        <span style="font-size:0.78rem;color:var(--muted);white-space:nowrap">+ </span>
+        <input type="number" id="rm-sub-months-input" min="1" max="120" placeholder="ay sayı" style="font-size:0.8rem;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);width:90px">
+        <button onclick="addSubscriptionMonthsCustom()" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem;white-space:nowrap">ay əlavə et</button>
+      </div>
       <div style="display:flex;gap:6px;align-items:center">
         <input type="date" id="rm-sub-date-input" style="font-size:0.8rem;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);flex:1">
         <button onclick="setCustomSubscription()" class="btn btn-sm btn-primary" style="font-size:0.75rem;white-space:nowrap">Təyin et</button>
@@ -1372,6 +1377,13 @@ async function _saveSubscription(isoDate) {
   _renderSubInfo(data.sub_expires);
   showToast('✅ Abunəlik yeniləndi');
   renderSuperadminDashboard();
+}
+
+function addSubscriptionMonthsCustom() {
+  var val = parseInt(document.getElementById('rm-sub-months-input').value);
+  if (!val || val < 1) { showToast('Ay sayını daxil edin'); return; }
+  document.getElementById('rm-sub-months-input').value = '';
+  addSubscriptionMonths(val);
 }
 
 function addSubscriptionMonths(months) {
