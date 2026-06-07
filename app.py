@@ -552,6 +552,73 @@ def api_login():
     log_action(username or '?', 'login_failed', {}, ip)
     return jsonify({'ok': False, 'error': 'İstifadəçi adı və ya şifrə yanlışdır'}), 401
 
+@app.route('/api/forgot-password', methods=['POST'])
+def api_forgot_password():
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if _is_forgot_limited(ip):
+        return jsonify({'ok': False, 'error': 'Çox sayda cəhd. 5 dəqiqə gözləyin.'}), 429
+    _record_forgot_attempt(ip)
+    data = request.json or {}
+    identifier = data.get('username', '').strip().lower()
+    users = load_users()
+    target = None
+    for uname, udata in users.items():
+        if uname.lower() == identifier or (udata.get('email') or '').lower() == identifier:
+            target = (uname, udata)
+            break
+    if not target:
+        return jsonify({'ok': True})  # security: don't reveal if user exists
+    uname, udata = target
+    email = udata.get('email', '')
+    if not email:
+        return jsonify({'ok': False, 'error': 'Bu hesabın email-i yoxdur. Administratorla əlaqə saxlayın.'})
+    import secrets
+    token = secrets.token_urlsafe(32)
+    expires = datetime.now(timezone.utc) + timedelta(hours=2)
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM reset_tokens WHERE username=%s", (uname,))
+        cur.execute("INSERT INTO reset_tokens (token, username, expires, used) VALUES (%s,%s,%s,FALSE)", (token, uname, expires))
+    reset_url = f"{APP_BASE_URL}/admin?reset={token}"
+    try:
+        msg = Message('QR Menu — Şifrə sıfırlama', recipients=[email])
+        msg.html = f"""<p>Salam <b>{uname}</b>,</p>
+<p>Şifrənizi sıfırlamaq üçün aşağıdakı linkə basın (2 saat ərzində etibarlıdır):</p>
+<p><a href="{reset_url}">{reset_url}</a></p>
+<p>Bu sorğu siz göndərməmisinizsə, məktubu nəzərə almayın.</p>"""
+        mail.send(msg)
+    except Exception as e:
+        return jsonify({'ok': False, 'error': 'Email göndərilmədi. Server xətası.'})
+    log_action(uname, 'forgot_password', {}, ip)
+    return jsonify({'ok': True})
+
+@app.route('/api/reset-password', methods=['POST'])
+def api_reset_password():
+    data = request.json or {}
+    token = data.get('token', '').strip()
+    password = data.get('password', '')
+    if not token or not password:
+        return jsonify({'ok': False, 'error': 'Token və şifrə tələb olunur'}), 400
+    if len(password) < 6:
+        return jsonify({'ok': False, 'error': 'Şifrə ən az 6 simvol olmalıdır'}), 400
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT username, expires, used FROM reset_tokens WHERE token=%s", (token,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'ok': False, 'error': 'Token tapılmadı və ya etibarsızdır'}), 400
+        if row['used']:
+            return jsonify({'ok': False, 'error': 'Bu token artıq istifadə edilib'}), 400
+        if row['expires'] < datetime.now(timezone.utc):
+            return jsonify({'ok': False, 'error': 'Tokenin vaxtı bitib. Yenidən cəhd edin.'}), 400
+        username = row['username']
+        hashed = generate_password_hash(password)
+        cur.execute("UPDATE users SET password=%s WHERE username=%s", (hashed, username))
+        cur.execute("UPDATE reset_tokens SET used=TRUE WHERE token=%s", (token,))
+    _invalidate_users_cache()
+    log_action(username, 'reset_password', {}, request.remote_addr or '')
+    return jsonify({'ok': True})
+
 @app.route('/api/logout', methods=['POST'])
 def api_logout():
     user = current_user()

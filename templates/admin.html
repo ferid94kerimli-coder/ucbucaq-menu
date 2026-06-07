@@ -372,6 +372,28 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
       </div>
       <div class="login-error" id="login-error"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">Daxil ol</button>
+      <div style="text-align:center;margin-top:12px">
+        <button type="button" onclick="openForgotModal()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:0.78rem;cursor:pointer;text-decoration:underline;font-family:inherit">Şifrəmi unutdum</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ŞIFRƏMI UNUTDUM MODAL -->
+<div id="forgot-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+  <div style="background:#1C1917;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:2rem;width:360px;max-width:92vw;animation:loginSlideUp 0.3s ease both">
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:2rem;margin-bottom:8px">📧</div>
+      <h3 style="color:#fff;font-family:'Playfair Display',serif;font-weight:600;margin:0 0 4px">Şifrəni sıfırla</h3>
+      <p style="font-size:0.78rem;color:rgba(255,255,255,0.4);margin:0">İstifadəçi adınızı və ya email-inizi daxil edin</p>
+    </div>
+    <div class="login-field" style="margin-bottom:12px">
+      <input class="login-input" id="forgot-identifier" type="text" placeholder="İstifadəçi adı və ya email" onkeydown="if(event.key==='Enter')doForgotPassword()">
+    </div>
+    <div id="forgot-msg" style="font-size:0.78rem;text-align:center;min-height:1.2em;margin-bottom:8px"></div>
+    <button class="login-btn" id="forgot-btn" onclick="doForgotPassword()">Sıfırlama linki göndər</button>
+    <div style="text-align:center;margin-top:10px">
+      <button type="button" onclick="document.getElementById('forgot-modal').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.35);font-size:0.78rem;cursor:pointer;font-family:inherit">Geri qayıt</button>
     </div>
   </div>
 </div>
@@ -558,6 +580,7 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
 
 
       <div class="save-bar"><button class="btn btn-primary" data-i18n="save" onclick="saveIntegration()">Yadda saxla</button></div>
+      <div id="social-preview" style="display:flex;flex-wrap:wrap;gap:8px;padding:0.75rem 0 0.25rem"></div>
     </div>
   </div>
 
@@ -717,6 +740,13 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
     <div data-i18n="layoutTitle" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">📐 Kart layoutu</div>
     <div id="layout-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:2rem;"></div>
 
+    <!-- CUSTOM CSS -->
+    <div data-i18n="customCss" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:0.75rem">✏️ Özel CSS</div>
+    <textarea id="custom-css-input" placeholder="/* Özel CSS kodunuzu buraya yazın */" rows="8" style="width:100%;font-family:monospace;font-size:0.82rem;padding:0.75rem;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);resize:vertical;line-height:1.5;box-sizing:border-box"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-sm btn-ghost" onclick="clearCustomCss()" style="border:1px solid var(--danger);color:var(--danger)">Sil</button>
+      <button class="btn btn-sm btn-primary" onclick="saveCustomCss()">Yadda saxla</button>
+    </div>
 
   </div>
 
@@ -852,6 +882,16 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
           <div style="font-size:0.75rem;color:var(--muted);margin-top:2px" data-i18n="syncMenuNote">Şəkillər görünmürsə bunu basın</div>
         </div>
         <button class="btn btn-sm btn-ghost" onclick="syncMenu()" style="border:2px solid var(--border)" data-i18n="syncNow">↺ Sinxronlaşdır</button>
+      </div>
+
+      <!-- BƏRPA EMAİL -->
+      <div class="manager-only" style="padding:0.85rem 1.25rem;border-bottom:1px solid var(--border)">
+        <div style="font-size:0.85rem;font-weight:500;color:var(--text);margin-bottom:6px">📧 <span data-i18n="recoveryEmail">Bərpa email-i</span></div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px" data-i18n="recoveryEmailNote">Şifrənizi unutduqda bu ünvana sıfırlama linki göndəriləcək.</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="email" id="s-email" placeholder="email@example.com" style="flex:1;font-size:0.83rem;height:36px">
+          <button class="btn btn-sm btn-primary" onclick="saveUserEmail()">Yadda saxla</button>
+        </div>
       </div>
 
       <!-- ŞİFRƏ DƏYİŞ -->
@@ -991,8 +1031,46 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
 
 
 // ── ŞİFRƏ SIFIRLAMA (token linki ilə) ──
-var RESET_TOKEN = null;
+var RESET_TOKEN = (function(){ var p = new URLSearchParams(window.location.search); return p.get('reset') || null; })();
 var _forceChangePass = false;  // must_change_password flag-i ilə açılır
+if (RESET_TOKEN) {
+  window.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('reset-modal').style.display = 'flex';
+    history.replaceState(null, '', window.location.pathname);
+  });
+}
+
+function openForgotModal() {
+  document.getElementById('forgot-identifier').value = '';
+  document.getElementById('forgot-msg').textContent = '';
+  document.getElementById('forgot-btn').disabled = false;
+  document.getElementById('forgot-btn').textContent = 'Sıfırlama linki göndər';
+  document.getElementById('forgot-modal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('forgot-identifier').focus(); }, 100);
+}
+
+async function doForgotPassword() {
+  var id  = document.getElementById('forgot-identifier').value.trim();
+  var msg = document.getElementById('forgot-msg');
+  var btn = document.getElementById('forgot-btn');
+  if (!id) { msg.style.color='#fca5a5'; msg.textContent='Ad və ya email daxil edin'; return; }
+  btn.disabled = true; btn.textContent = '⏳ Göndərilir...';
+  try {
+    var r = await fetch('/api/forgot-password', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username: id}) });
+    var d = await r.json();
+    if (d.ok) {
+      msg.style.color = '#86efac';
+      msg.textContent = '✅ Email göndərildi (mövcud olduqda)';
+    } else {
+      msg.style.color = '#fca5a5';
+      msg.textContent = d.error || 'Xəta baş verdi';
+      btn.disabled = false; btn.textContent = 'Sıfırlama linki göndər';
+    }
+  } catch(e) {
+    msg.style.color = '#fca5a5'; msg.textContent = 'Server bağlantı xətası';
+    btn.disabled = false; btn.textContent = 'Sıfırlama linki göndər';
+  }
+}
 function openForceChangeModal() {
   _forceChangePass = true;
   RESET_TOKEN = null;
@@ -1838,7 +1916,6 @@ function previewImage(input) {
       if (d.ok) {
         tempImageBase64 = d.url;
         document.getElementById('img-preview-wrap').innerHTML = '<img src="'+d.url+'" alt="" style="width:100%;height:100%;object-fit:cover">';
-        document.getElementById('f-image').value = d.url;
         showToast(interfaceLang==='en'?'✅ Image uploaded':'✅ Şəkil yükləndi');
       } else { showToast('❌ ' + (d.error||(interfaceLang==='en'?'Error':'Xəta'))); }
     }).catch(function(){ showToast(interfaceLang==='en'?'❌ Upload error':'❌ Yüklənmə xətası'); });
@@ -2859,6 +2936,7 @@ var I18N = {
     statusAll: 'Hamısı',
     statusActive: 'Aktiv',
     statusInactive: 'Deaktiv',
+    loading: 'Yüklənir...',
   },
   en: {
     nav_dashboard: 'Dashboard',
@@ -3030,6 +3108,7 @@ var I18N = {
     statusAll: 'All',
     statusActive: 'Active',
     statusInactive: 'Inactive',
+    loading: 'Loading...',
   }
 };
 
@@ -3420,7 +3499,7 @@ function openAddUser() {
   document.getElementById('u-username').disabled = false;
   document.getElementById('u-pass').value = '';
   document.getElementById('u-pass2').value = '';
-  document.getElementById('u-role').value = 'admin';
+  document.getElementById('u-role').value = 'manager';
   document.getElementById('user-drawer').classList.add('open');
 }
 
@@ -3443,7 +3522,6 @@ function saveUser() {
   var username = document.getElementById('u-username').value.trim().toLowerCase();
   var pass  = document.getElementById('u-pass').value;
   var pass2 = document.getElementById('u-pass2').value;
-  var role  = document.getElementById('u-role').value;
   if (!username) { showToast(interfaceLang==='en'?'Username is required':'İstifadəçi adı tələb olunur'); return; }
   if (pass && pass !== pass2) { showToast(interfaceLang==='en'?'Passwords do not match':'Şifrələr uyğun deyil'); return; }
 
