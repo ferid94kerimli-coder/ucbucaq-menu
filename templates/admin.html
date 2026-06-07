@@ -420,7 +420,7 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
       </div>
       <div class="card">
         <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;font-weight:500;">Restoran statistikası</div>
-        <table class="items-table"><thead><tr><th>İstifadəçi</th><th>Ad</th><th>Açılma</th><th>Klik</th><th></th></tr></thead><tbody id="sa-restaurants-body"></tbody></table>
+        <table class="items-table"><thead><tr><th>İstifadəçi</th><th>Ad</th><th>Açılma</th><th>Klik</th><th>Status</th><th></th></tr></thead><tbody id="sa-restaurants-body"></tbody></table>
       </div>
     </div>
   </div>
@@ -1206,14 +1206,17 @@ async function renderSuperadminDashboard() {
     (data.restaurants || []).slice().sort(function(a,b){ return (b.opens||0)-(a.opens||0); }).forEach(function(r){
       var menuUrl = 'https://qr-menu-worker.qr-menu-az.workers.dev/menu/' + encodeURIComponent(r.username);
       var safeU = r.username.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      var isActive = r.is_active !== false;
       var tr = document.createElement('tr');
-      tr.innerHTML = '<td style="font-weight:500">'+r.username+'</td>'
+      tr.innerHTML = '<td style="font-weight:500">'+(isActive?'':'<span style="color:var(--muted);text-decoration:line-through">')+r.username+(isActive?'':'</span>')+'</td>'
         +'<td style="color:var(--muted);font-size:0.85rem">'+(r.name||'—')+'</td>'
         +'<td style="color:var(--accent);font-weight:500">'+(r.opens||0)+'</td>'
         +'<td style="color:var(--muted)">'+(r.totalClicks||0)+'</td>'
+        +'<td><span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600;background:'+(isActive?'rgba(34,197,94,0.12)':'rgba(239,68,68,0.1)')+';color:'+(isActive?'#16a34a':'#dc2626')+'">'+(isActive?'Aktiv':'Deaktiv')+'</span></td>'
         +'<td style="white-space:nowrap">'
           +'<a href="'+menuUrl+'" target="_blank" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);text-decoration:none;font-size:0.75rem;padding:3px 8px;margin-right:4px">👁 Bax</a>'
-          +'<button onclick="doImpersonate(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem;padding:3px 8px">🔑 Panel</button>'
+          +'<button onclick="doImpersonate(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem;padding:3px 8px;margin-right:4px">🔑 Panel</button>'
+          +'<button onclick="doToggleActive(\''+safeU+'\','+(isActive?'false':'true')+')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem;padding:3px 8px;color:'+(isActive?'#dc2626':'#16a34a')+'">'+(isActive?'🔒 Bağla':'🔓 Aç')+'</button>'
         +'</td>';
       tbody.appendChild(tr);
     });
@@ -1223,6 +1226,24 @@ async function renderSuperadminDashboard() {
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:1rem">Yüklənmə xətası</td></tr>';
   }
+}
+
+async function doToggleActive(username, activate) {
+  var msg = activate
+    ? 'Bu restoranı aktivləşdirmək istəyirsiniz? Menyu yenidən görünəcək.'
+    : 'Bu restoranı deaktivləşdirmək istəyirsiniz? Müştərilər menyunu görə bilməyəcək.';
+  var label = activate ? '🔓 Aktivləşdir' : '🔒 Bağla';
+  showConfirm(username, msg, async function() {
+    var res = await fetch('/api/superadmin/users/' + encodeURIComponent(username) + '/set-active', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({active: activate})
+    });
+    var data = await res.json();
+    if (!data.ok) { showToast('❌ ' + (data.error || 'Xəta')); return; }
+    showToast(activate ? '✅ Aktiv edildi' : '🔒 Deaktiv edildi');
+    renderSuperadminDashboard();
+  }, activate ? '🔓' : '🔒', label);
 }
 
 async function doImpersonate(username) {

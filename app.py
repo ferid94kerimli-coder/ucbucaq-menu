@@ -280,6 +280,9 @@ def init_db():
             ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE
         """)
         cur.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE
+        """)
+        cur.execute("""
             CREATE TABLE IF NOT EXISTS user_data (
                 username TEXT PRIMARY KEY REFERENCES users(username) ON DELETE CASCADE,
                 data     JSONB NOT NULL DEFAULT '{}'
@@ -340,13 +343,14 @@ def load_users():
         return cached
     with db_conn() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT username, password, role, email, must_change_password FROM users")
+        cur.execute("SELECT username, password, role, email, must_change_password, is_active FROM users")
         rows = cur.fetchall()
     users = {r['username']: {
         'password': r['password'],
         'role': r['role'],
         'email': r['email'] or '',
-        'must_change_password': r['must_change_password']
+        'must_change_password': r['must_change_password'],
+        'is_active': r['is_active']
     } for r in rows}
     _set_cached_users(users)
     return users
@@ -1103,6 +1107,7 @@ def api_superadmin_stats():
         cur = conn.cursor()
         cur.execute("""
             SELECT u.username,
+                   u.is_active,
                    COALESCE(ud.data->'cafe'->>'nameAz', u.username) AS name,
                    COALESCE((ud.data->'stats'->'opens'->>'total')::int, 0) AS opens,
                    ud.data->'stats'->'clicks' AS clicks,
@@ -1121,6 +1126,7 @@ def api_superadmin_stats():
             'username': r['username'],
             'name': r['name'],
             'opens': r['opens'],
+            'is_active': r['is_active'],
             'totalClicks': sum(int(v) for v in clicks.values()),
             'topItems': sorted(clicks.items(), key=lambda x: -int(x[1]))[:5],
             'topCats': sorted(cats.items(), key=lambda x: -int(x[1]))[:5],
@@ -1132,6 +1138,43 @@ def api_superadmin_stats():
         'totalOpens': sum(r['opens'] for r in restaurants),
         'restaurants': restaurants
     })
+
+_CLOSED_HTML = """<!DOCTYPE html>
+<html lang="az"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bağlıdır</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:'Segoe UI',sans-serif;background:#f5f0eb;display:flex;align-items:center;justify-content:center;min-height:100vh}}
+.box{{text-align:center;padding:2.5rem 2rem}}
+.emoji{{font-size:4rem;margin-bottom:1rem;display:block}}
+h1{{font-size:1.4rem;color:#333;margin-bottom:.5rem;font-weight:600}}
+p{{color:#888;font-size:.9rem}}
+</style></head>
+<body><div class="box">
+<span class="emoji">🔒</span>
+<h1>Müvəqqəti bağlıdır</h1>
+<p>Bu restoran hal-hazırda aktiv deyil.</p>
+</div></body></html>"""
+
+@app.route('/api/superadmin/users/<username>/set-active', methods=['POST'])
+@superadmin_required
+def api_set_active(username):
+    users = load_users()
+    if username not in users:
+        return jsonify({'error': 'İstifadəçi tapılmadı'}), 404
+    data = request.json or {}
+    active = bool(data.get('active', True))
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET is_active=%s WHERE username=%s", (active, username))
+    _invalidate_users_cache()
+    log_action(current_user(), 'set_active', {'target': username, 'active': active}, request.remote_addr)
+    if active:
+        threading.Thread(target=_push_static_menu_async, args=(username,), daemon=True).start()
+    else:
+        threading.Thread(target=_push_to_cf_worker, args=(username, _CLOSED_HTML), daemon=True).start()
+    return jsonify({'ok': True, 'username': username, 'active': active})
 
 # ────────────────────────────────────────────────────────────────
 # AUDİT LOG
