@@ -882,7 +882,7 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
     </div>
     <div class="card" style="padding:0;overflow:hidden">
       <table class="items-table" id="sub-table">
-        <thead><tr><th>Restoran</th><th>Status</th><th>Bitiş tarixi</th><th>Qalan</th><th>Sürətli əlavə</th><th></th></tr></thead>
+        <thead><tr><th>Restoran</th><th>Status</th><th>Bitiş tarixi</th><th>Qalan</th><th>Əlavə et</th><th></th></tr></thead>
         <tbody id="sub-table-body"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Yüklənir...</td></tr></tbody>
       </table>
     </div>
@@ -1403,29 +1403,52 @@ async function renderSubscriptionPage() {
       +'<td style="font-size:0.82rem;color:var(--text)">'+expiresStr+'</td>'
       +'<td>'+daysHtml+'</td>'
       +'<td style="white-space:nowrap">'
-        +'<button onclick="subQuickAdd(\''+safeU+'\',1)" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:2px 7px;margin-right:3px">+1 ay</button>'
-        +'<button onclick="subQuickAdd(\''+safeU+'\',3)" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:2px 7px;margin-right:3px">+3 ay</button>'
-        +'<button onclick="subQuickAdd(\''+safeU+'\',12)" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:2px 7px">+1 il</button>'
+        +'<div style="display:flex;gap:4px;align-items:center">'
+        +'<input type="number" id="sub-amt-'+safeU+'" min="1" max="520" value="1" style="width:52px;font-size:0.75rem;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">'
+        +'<select id="sub-unit-'+safeU+'" style="font-size:0.75rem;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">'
+        +'<option value="week">Həftə</option>'
+        +'<option value="month" selected>Ay</option>'
+        +'</select>'
+        +'<button onclick="subAddPeriod(\''+safeU+'\')" class="btn btn-sm btn-primary" style="font-size:0.72rem;padding:3px 8px">Əlavə et</button>'
+        +'<button onclick="subAddTrial(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:3px 8px" title="1 həftəlik trial">Trial</button>'
+        +'</div>'
       +'</td>'
-      +'<td><button onclick="openRestaurantModal(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:2px 7px">✏ İdarə et</button></td>';
+      +'<td><button onclick="openRestaurantModal(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.72rem;padding:2px 7px">📊 Stat</button></td>';
     tbody.appendChild(tr);
   });
 }
 
-async function subQuickAdd(username, months) {
-  var r = _saRestaurantsData.find(function(x){ return x.username === username; });
-  if (!r) return;
-  var base = (r.sub_expires && new Date(r.sub_expires) > new Date()) ? new Date(r.sub_expires) : new Date();
-  base.setMonth(base.getMonth() + months);
+async function _subSave(username, isoDate, label) {
   var res = await fetch('/api/superadmin/users/' + encodeURIComponent(username) + '/set-subscription', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({expires: base.toISOString()})
+    body: JSON.stringify({expires: isoDate})
   });
   var data = await res.json();
   if (!data.ok) { showToast('❌ ' + (data.error||'Xəta')); return; }
-  r.sub_expires = data.sub_expires;
-  showToast('✅ ' + username + ' — abunəlik yeniləndi');
+  var r = _saRestaurantsData.find(function(x){ return x.username === username; });
+  if (r) r.sub_expires = data.sub_expires;
+  showToast('✅ ' + username + ' — ' + label);
   renderSubscriptionPage();
+}
+
+async function subAddPeriod(username) {
+  var amtEl  = document.getElementById('sub-amt-'  + username);
+  var unitEl = document.getElementById('sub-unit-' + username);
+  var val  = parseInt(amtEl ? amtEl.value : 0);
+  var unit = unitEl ? unitEl.value : 'month';
+  if (!val || val < 1) { showToast('Say daxil edin'); return; }
+  var r = _saRestaurantsData.find(function(x){ return x.username === username; });
+  var base = (r && r.sub_expires && new Date(r.sub_expires) > new Date()) ? new Date(r.sub_expires) : new Date();
+  if (unit === 'week') base.setDate(base.getDate() + val * 7);
+  else base.setMonth(base.getMonth() + val);
+  await _subSave(username, base.toISOString(), val + ' ' + (unit === 'week' ? 'həftə əlavə edildi' : 'ay əlavə edildi'));
+}
+
+async function subAddTrial(username) {
+  var r = _saRestaurantsData.find(function(x){ return x.username === username; });
+  var base = new Date();
+  base.setDate(base.getDate() + 7);
+  await _subSave(username, base.toISOString(), '1 həftəlik trial təyin edildi');
 }
 
 function addSubscriptionCustom(unit) {
