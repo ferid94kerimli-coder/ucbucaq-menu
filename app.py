@@ -656,6 +656,34 @@ def api_upload_logo():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/upload/banner', methods=['POST'])
+@login_required
+def api_upload_banner():
+    if 'file' not in request.files:
+        return jsonify({'error': 'Fayl tapılmadı'}), 400
+    file = request.files['file']
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Yalnız şəkil faylları'}), 400
+
+    username = current_user()
+    try:
+        public_id = f"ucbucaq/{username}/banner"
+        url = upload_to_cloudinary(file, public_id=public_id, max_size=(1920, 800))
+        with db_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT data FROM user_data WHERE username = %s FOR UPDATE", (username,))
+            row = cur.fetchone()
+            db = row['data'] if row else copy.deepcopy(DEFAULT_MENU_DATA)
+            db['cafe']['banner'] = url
+            _upsert_user_data(cur, username, db)
+        _invalidate_cache(username)
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+        log_action(username, 'upload_banner', {'url': url}, ip)
+        threading.Thread(target=_push_static_menu_async, args=(username,), daemon=True).start()
+        return jsonify({'ok': True, 'url': url})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # ────────────────────────────────────────────────────────────────
 # İSTİFADƏÇİ İDARƏETMƏSİ
 # ────────────────────────────────────────────────────────────────

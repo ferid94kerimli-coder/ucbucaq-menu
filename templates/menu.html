@@ -43,6 +43,7 @@
     width: 180px; height: 180px;
     background: rgba(255,255,255,0.08);
     border-radius: 50%;
+    transition: opacity 0.4s;
   }
   .header::after {
     content: '';
@@ -52,7 +53,28 @@
     background: var(--accent2);
     opacity: 0.35;
     border-radius: 50%;
+    transition: opacity 0.4s;
   }
+  .header.has-banner::before,
+  .header.has-banner::after { opacity: 0; }
+  #header-banner {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.5s;
+    z-index: 0;
+  }
+  #header-banner.loaded { opacity: 1; }
+  #header-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(10,6,3,0.15) 0%, rgba(10,6,3,0.72) 100%);
+    z-index: 1;
+    display: none;
+  }
+  .header.has-banner #header-gradient { display: block; }
 
   /* Dil düyməsi — yuxarı sağ */
   .lang-toggle {
@@ -764,20 +786,22 @@
 <body>
 <div class="menu-wrap">
 
-  <div class="header">
+  <div class="header" id="menu-header">
+    <img id="header-banner" src="" alt="">
+    <div id="header-gradient"></div>
     <!-- Dil düyməsi — yuxarı sağ -->
-    <div class="lang-toggle">
+    <div class="lang-toggle" style="position:relative;z-index:2">
       <button class="lang-btn active" onclick="setLang('az')">AZ</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
     </div>
 
     <!-- Loqo sahəsi -->
-    <div class="header-logo-wrap" id="logo-wrap"></div>
+    <div class="header-logo-wrap" id="logo-wrap" style="position:relative;z-index:2"></div>
 
-    <h1 id="cafe-name"></h1>
-    <p id="cafe-sub"></p>
-    <div id="social-bar" style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap;position:relative;z-index:1"></div>
-    <div id="hours-badge" style="display:none;margin-top:10px;position:relative;z-index:1"></div>
+    <h1 id="cafe-name" style="position:relative;z-index:2"></h1>
+    <p id="cafe-sub" style="position:relative;z-index:2"></p>
+    <div id="social-bar" style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap;position:relative;z-index:2"></div>
+    <div id="hours-badge" style="display:none;margin-top:10px;position:relative;z-index:2"></div>
   </div>
 
   <div class="cats-wrap"><div class="cats" id="cat-bar"></div></div>
@@ -1102,6 +1126,22 @@ function render() {
   document.title = cafeName + ' — Menu';
   document.getElementById('cafe-sub').textContent =
     lang === 'az' ? cafe.addrAz : (cafe.addrEn || cafe.addrAz);
+
+  // Banner
+  const headerEl = document.getElementById('menu-header');
+  const bannerImg = document.getElementById('header-banner');
+  if (cafe.banner) {
+    headerEl.classList.add('has-banner');
+    if (bannerImg.src !== cafe.banner) {
+      bannerImg.classList.remove('loaded');
+      bannerImg.onload = function() { bannerImg.classList.add('loaded'); };
+      bannerImg.src = cafe.banner;
+    }
+  } else {
+    headerEl.classList.remove('has-banner');
+    bannerImg.src = '';
+    bannerImg.classList.remove('loaded');
+  }
 
   // Loqo
   loadLogo();

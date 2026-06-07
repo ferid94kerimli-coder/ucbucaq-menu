@@ -514,6 +514,25 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
       </div>
     </div>
 
+    <!-- Banner -->
+    <div class="card">
+      <div style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">🖼️ Header Banner</div>
+      <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+        <div id="admin-banner-preview" style="width:140px;height:70px;border-radius:12px;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:0.72rem;color:var(--muted);text-align:center;overflow:hidden;flex-shrink:0;background:#fafaf9">
+          <span style="font-size:1.4rem;display:block;margin-bottom:4px">🏔️</span><span>Banner yoxdur</span>
+        </div>
+        <div style="flex:1;min-width:160px">
+          <p style="font-size:0.82rem;color:var(--text);margin-bottom:0.5rem">Menyunun header hissəsinin arxa fonunda görünəcək.</p>
+          <p style="font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem">Tövsiyə: 1200×500px və ya daha geniş, landscape format.</p>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <label for="admin-banner-file" style="display:inline-block;padding:0.5rem 1rem;background:var(--accent);color:#fff;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:500">🖼️ Şəkil seç</label>
+            <input type="file" id="admin-banner-file" accept="image/png,image/jpeg,image/jpg,image/webp" style="display:none" onchange="adminUploadBanner(this)">
+            <button class="btn btn-danger btn-sm" id="admin-banner-del-btn" onclick="adminDeleteBanner()" style="display:none">🗑 Sil</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- İnteqrasiya -->
     <div class="card">
       <div data-i18n="integration" style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:1rem">🔗 İnteqrasiya</div>
@@ -1466,6 +1485,7 @@ function loadCafeForm() {
   document.getElementById('cafe-wifi').value      = c.wifi      || '';
   var sfEl = document.getElementById('cafe-service-fee'); if (sfEl) sfEl.value = (c.serviceFee !== undefined && c.serviceFee !== null) ? c.serviceFee : 7;
   adminLoadLogo();
+  adminLoadBanner();
   renderSocialPreview();
   renderHoursForm();
 }
@@ -1619,6 +1639,45 @@ function restoreBackup(input) {
   };
   reader.readAsText(file);
   input.value = '';
+}
+function adminLoadBanner() {
+  var url = (STATE.cafe && STATE.cafe.banner) ? STATE.cafe.banner : '';
+  var preview = document.getElementById('admin-banner-preview');
+  var delBtn  = document.getElementById('admin-banner-del-btn');
+  if (!preview) return;
+  if (url) {
+    preview.innerHTML = '<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px">';
+    preview.style.border = '2px solid var(--border)';
+    if (delBtn) delBtn.style.display = '';
+  } else {
+    preview.innerHTML = '<span style="font-size:1.4rem;display:block;margin-bottom:4px">🏔️</span><span style="font-size:0.72rem">Banner yoxdur</span>';
+    if (delBtn) delBtn.style.display = 'none';
+  }
+}
+function adminUploadBanner(input) {
+  if (!input || !input.files || !input.files[0]) return;
+  var formData = new FormData();
+  formData.append('file', input.files[0]);
+  showToast(interfaceLang==='en'?'⏳ Uploading banner...':'⏳ Banner yüklənir...');
+  fetch('/api/upload/banner', {method:'POST', body: formData})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.ok) {
+        STATE.cafe = STATE.cafe || {};
+        STATE.cafe.banner = d.url;
+        saveData();
+        adminLoadBanner();
+        showToast(interfaceLang==='en'?'✅ Banner saved':'✅ Banner yadda saxlandı');
+      } else { showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta'))); }
+    }).catch(function(){ showToast(interfaceLang==='en'?'❌ Upload error':'❌ Yüklənmə xətası'); });
+}
+function adminDeleteBanner() {
+  showConfirm(interfaceLang==='en'?'Remove Banner':'Banneri sil', interfaceLang==='en'?'Banner will be removed from the menu page.':'Banner silinəcək və menyu səhifəsindən yox olacaq.', function(){
+    if (STATE.cafe) delete STATE.cafe.banner;
+    saveData();
+    adminLoadBanner();
+    showToast(interfaceLang==='en'?'Banner removed':'Banner silindi');
+  }, '🖼️');
 }
 function adminDeleteLogo() {
   showConfirm(interfaceLang==='en'?'Remove Logo':'Loqonu sil', interfaceLang==='en'?'Logo will be removed from the menu page.':'Loqo silinəcək və menyu səhifəsindən yox olacaq.', function(){
