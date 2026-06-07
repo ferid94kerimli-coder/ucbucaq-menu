@@ -481,7 +481,7 @@ body.is-impersonating .main{ padding-top:calc(2rem + 38px); }
       </div>
       <div class="card">
         <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;font-weight:500;">Restoran statistikası</div>
-        <table class="items-table"><thead><tr><th>İstifadəçi</th><th>Ad</th><th>Açılma</th><th>Klik</th><th>Status</th><th>Abunəlik</th><th></th></tr></thead><tbody id="sa-restaurants-body"></tbody></table>
+        <table class="items-table"><thead><tr><th>İstifadəçi</th><th>Ad</th><th>Açılma</th><th>Klik</th><th>Status</th><th></th></tr></thead><tbody id="sa-restaurants-body"></tbody></table>
       </div>
     </div>
   </div>
@@ -1270,7 +1270,7 @@ var _saRestaurantsData = [];
 async function renderSuperadminDashboard() {
   var tbody = document.getElementById('sa-restaurants-body');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:1rem">Yüklənir...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem">Yüklənir...</td></tr>';
   try {
     var res = await fetch('/api/superadmin/stats');
     var data = await res.json();
@@ -1291,13 +1291,6 @@ async function renderSuperadminDashboard() {
         +'<td style="color:var(--accent);font-weight:500">'+(r.opens||0)+'</td>'
         +'<td style="color:var(--muted)">'+(r.totalClicks||0)+'</td>'
         +'<td><span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600;background:'+(isActive?'rgba(34,197,94,0.12)':'rgba(239,68,68,0.1)')+';color:'+(isActive?'#16a34a':'#dc2626')+'">'+(isActive?'Aktiv':'Deaktiv')+'</span></td>'
-        +(function(){
-          if (!r.sub_expires) return '<td><span style="color:var(--muted);font-size:0.78rem">∞</span></td>';
-          var exp = new Date(r.sub_expires), now = new Date();
-          var days = Math.ceil((exp - now) / 86400000);
-          if (days > 0) return '<td><span style="font-size:0.75rem;color:#16a34a;font-weight:500">'+days+' gün</span></td>';
-          return '<td><span style="font-size:0.75rem;color:#dc2626;font-weight:500">Bitib</span></td>';
-        })()
         +'<td style="white-space:nowrap">'
           +'<a href="'+menuUrl+'" target="_blank" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);text-decoration:none;font-size:0.75rem;padding:3px 8px;margin-right:4px">👁 Bax</a>'
           +'<button onclick="doImpersonate(\''+safeU+'\')" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);font-size:0.75rem;padding:3px 8px;margin-right:4px">🔑 Panel</button>'
@@ -1306,10 +1299,10 @@ async function renderSuperadminDashboard() {
       tbody.appendChild(tr);
     });
     if (!_saRestaurantsData.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:1rem">Məlumat yoxdur</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem">Məlumat yoxdur</td></tr>';
     }
   } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:1rem">Yüklənmə xətası</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:1rem">Yüklənmə xətası</td></tr>';
   }
 }
 
