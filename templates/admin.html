@@ -12,19 +12,20 @@
   --bg: #F5F3F0; --sidebar: #1C1917; --card: #FFFFFF;
   --text: #1A1210; --muted: #8B7355; --border: rgba(0,0,0,0.08);
   --danger: #dc2626; --success: #16a34a; --warn: #d97706; --radius: 14px;
-  --input-bg: #fff;
+  --input-bg: #fff; --surface: #fff;
 }
 /* DARK ADMIN THEME */
 body.admin-dark {
   --bg: #0F0F0F; --card: #1A1A1A; --text: #E8E3DC;
   --muted: #9A8F82; --border: rgba(255,255,255,0.08);
-  --input-bg: #252525; --sidebar: #111111; --success: #22c55e; --danger: #f87171; --warn: #fbbf24;
+  --input-bg: #252525; --surface: #252525; --sidebar: #111111; --success: #22c55e; --danger: #f87171; --warn: #fbbf24;
 }
 body.admin-dark input[type=text],
 body.admin-dark input[type=tel],
 body.admin-dark input[type=number],
 body.admin-dark textarea,
 body.admin-dark select { background: var(--input-bg); color: var(--text); border-color: var(--border); }
+body.admin-dark select option { background: #1e1e1e; color: #e8e3dc; }
 body.admin-dark input[type=password] { background: var(--input-bg); color: var(--text); border-color: var(--border); }
 body.admin-dark input[type=password]::placeholder { color: rgba(255,255,255,0.3); }
 body.admin-dark input[type=text]::placeholder,
