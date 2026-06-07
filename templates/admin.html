@@ -1663,9 +1663,11 @@ async function saveItem() {
   saveData(); closeDrawerDirect('item-drawer'); renderMenuPage();
 }
 function clearItemImage() {
-  tempImageBase64 = null; itemImageDeleted = true;
-  document.getElementById('img-preview-wrap').innerHTML = '<div class="placeholder"><span>&#128444;</span>Seçilmiş şəkil burada görünəcək</div>';
-  document.getElementById('item-img-del-btn').style.display = 'none';
+  showConfirm(interfaceLang==='en'?'Remove Image':'Şəkli sil', interfaceLang==='en'?'The image will be removed from this item.':'Şəkil bu məhsuldan silinəcək.', function(){
+    tempImageBase64 = null; itemImageDeleted = true;
+    document.getElementById('img-preview-wrap').innerHTML = '<div class="placeholder"><span>&#128444;</span>Seçilmiş şəkil burada görünəcək</div>';
+    document.getElementById('item-img-del-btn').style.display = 'none';
+  }, '🖼️', interfaceLang==='en'?'Remove':'Sil');
 }
 function deleteItem(idx) {
   var item = STATE.items[idx];
@@ -1759,9 +1761,11 @@ async function saveCat() {
   saveData(); closeDrawerDirect('cat-drawer'); renderCatsPage();
 }
 function clearCatImage() {
-  tempCatImage = null;
-  catImageDeleted = true;
-  resetCatImagePreview();
+  showConfirm(interfaceLang==='en'?'Remove Image':'Şəkli sil', interfaceLang==='en'?'The image will be removed from this category.':'Şəkil bu kateqoriyadan silinəcək.', function(){
+    tempCatImage = null;
+    catImageDeleted = true;
+    resetCatImagePreview();
+  }, '🖼️', interfaceLang==='en'?'Remove':'Sil');
 }
 function resetCatImagePreview() {
   var preview = document.getElementById('cf-img-preview');
@@ -2373,11 +2377,12 @@ function saveCustomCss() {
 }
 
 function clearCustomCss() {
-  document.getElementById('custom-css-input').value = '';
-
-  STATE.customCss = '';
-  saveData();
-  showToast(interfaceLang==='en'?'Custom CSS cleared':'Özel CSS silindi');
+  showConfirm(interfaceLang==='en'?'Clear Custom CSS':'Özel CSS-i sil', interfaceLang==='en'?'All custom CSS will be removed.':'Bütün özel CSS silinəcək.', function(){
+    document.getElementById('custom-css-input').value = '';
+    STATE.customCss = '';
+    saveData();
+    showToast(interfaceLang==='en'?'Custom CSS cleared':'Özel CSS silindi');
+  }, '🎨', interfaceLang==='en'?'Clear':'Sil');
 }
 
 // Override renderThemePage to also render font/layout/css
