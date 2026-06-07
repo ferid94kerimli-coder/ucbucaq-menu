@@ -1790,9 +1790,10 @@ function _drawAnalytics(data) {
   document.getElementById('stat-menu-opens').textContent = menuOpens.total || 0;
   document.getElementById('stat-total-clicks').textContent = totalClicks;
 
+  var _isAz = interfaceLang !== 'en';
   var topItemKey = clickEntries.length ? clickEntries[0][0] : null;
   var topItemObj = topItemKey ? STATE.items.find(function(i){ return i.nameAz===topItemKey || i.nameEn===topItemKey; }) : null;
-  var topItem = topItemKey ? (topItemObj ? (az ? topItemObj.nameAz : (topItemObj.nameEn || topItemObj.nameAz)) : topItemKey) : '—';
+  var topItem = topItemKey ? (topItemObj ? (_isAz ? topItemObj.nameAz : (topItemObj.nameEn || topItemObj.nameAz)) : topItemKey) : '—';
   document.getElementById('stat-top-item').textContent = topItem;
 
   var topCatId = Object.entries(catStats).sort(function(a,b){return b[1]-a[1];})[0];
