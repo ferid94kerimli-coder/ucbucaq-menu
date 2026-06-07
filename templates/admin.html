@@ -409,7 +409,7 @@ body.is-superadmin .manager-only{ display:none !important; }
       </div>
       <div class="card">
         <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;font-weight:500;">Restoran statistikası</div>
-        <table class="items-table"><thead><tr><th>İstifadəçi</th><th>Ad</th><th>Açılma</th><th>Klik</th></tr></thead><tbody id="sa-restaurants-body"></tbody></table>
+        <table class="items-table"><thead><tr><th>İstifadəçi</th><th>Ad</th><th>Açılma</th><th>Klik</th><th></th></tr></thead><tbody id="sa-restaurants-body"></tbody></table>
       </div>
     </div>
   </div>
@@ -1190,11 +1190,13 @@ async function renderSuperadminDashboard() {
     document.getElementById('sa-stat-clicks').textContent = totalClicks;
     tbody.innerHTML = '';
     (data.restaurants || []).slice().sort(function(a,b){ return (b.opens||0)-(a.opens||0); }).forEach(function(r){
+      var menuUrl = 'https://qr-menu-worker.qr-menu-az.workers.dev/menu/' + encodeURIComponent(r.username);
       var tr = document.createElement('tr');
       tr.innerHTML = '<td style="font-weight:500">'+r.username+'</td>'
         +'<td style="color:var(--muted);font-size:0.85rem">'+(r.name||'—')+'</td>'
         +'<td style="color:var(--accent);font-weight:500">'+(r.opens||0)+'</td>'
-        +'<td style="color:var(--muted)">'+(r.totalClicks||0)+'</td>';
+        +'<td style="color:var(--muted)">'+(r.totalClicks||0)+'</td>'
+        +'<td><a href="'+menuUrl+'" target="_blank" class="btn btn-sm btn-ghost" style="border:1px solid var(--border);text-decoration:none;font-size:0.75rem;padding:3px 10px">👁 Bax</a></td>';
       tbody.appendChild(tr);
     });
     if (!(data.restaurants||[]).length) {
