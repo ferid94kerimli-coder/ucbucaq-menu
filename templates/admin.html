@@ -3150,7 +3150,7 @@ function openEditUser(key) {
   editingUserKey = key;
   document.getElementById('user-drawer-title').textContent = interfaceLang==='en' ? 'Edit User' : 'İstifadəçini düzəlt';
   document.getElementById('u-username').value = key;
-  document.getElementById('u-username').disabled = true;
+  document.getElementById('u-username').disabled = false;
   document.getElementById('u-pass').value = '';
   document.getElementById('u-pass2').value = '';
   fetch('/api/users/' + key + '/info').then(function(r){ return r.json(); }).then(function(d){
@@ -3171,33 +3171,50 @@ function saveUser() {
   if (pass && pass !== pass2) { showToast(interfaceLang==='en'?'Passwords do not match':'Şifrələr uyğun deyil'); return; }
 
   if (editingUserKey) {
-    // Rolu yenilə
-    fetch('/api/users/' + editingUserKey + '/role', {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({role: role})
-    }).then(function(r){ return r.json(); }).then(function(d){
-      if (d.ok) showToast(interfaceLang==='en'?'User updated':'İstifadəçi yeniləndi');
-      else showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
-    });
-    // Emaili yenilə
-    var emailVal = (document.getElementById('u-email') || {}).value;
-    if (emailVal !== undefined) {
-      fetch('/api/users/' + editingUserKey + '/email', {
+    var oldKey = editingUserKey;
+    var newKey = username;
+    function afterRename(targetKey) {
+      // Rolu yenilə
+      fetch('/api/users/' + targetKey + '/role', {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: emailVal.trim()})
+        body: JSON.stringify({role: role})
       }).then(function(r){ return r.json(); }).then(function(d){
-        if (d.ok && d.email_sent) showToast(interfaceLang==='en'?'📧 Reset link sent to new email':'📧 Yeni emailə sıfırlama linki göndərildi');
+        if (d.ok) showToast(interfaceLang==='en'?'User updated':'İstifadəçi yeniləndi');
+        else showToast('❌ ' + (d.error || (interfaceLang==='en'?'Error':'Xəta')));
       });
+      // Emaili yenilə
+      var emailVal = (document.getElementById('u-email') || {}).value;
+      if (emailVal !== undefined) {
+        fetch('/api/users/' + targetKey + '/email', {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email: emailVal.trim()})
+        }).then(function(r){ return r.json(); }).then(function(d){
+          if (d.ok && d.email_sent) showToast(interfaceLang==='en'?'📧 Reset link sent to new email':'📧 Yeni emailə sıfırlama linki göndərildi');
+        });
+      }
+      // Şifrə dəyişilibsə onu da yenilə
+      if (pass) {
+        fetch('/api/users/' + targetKey + '/set-password', {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({password: pass})
+        });
+      }
+      setTimeout(renderUsersList, 500);
     }
-    // Şifrə dəyişilibsə onu da yenilə
-    if (pass) {
-      fetch('/api/users/' + editingUserKey + '/set-password', {
+    if (newKey !== oldKey) {
+      fetch('/api/users/' + oldKey + '/rename', {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({password: pass})
+        body: JSON.stringify({new_username: newKey})
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if (d.ok) { afterRename(newKey); }
+        else { showToast('❌ ' + (d.error || (interfaceLang==='en'?'Rename failed':'Ad dəyişmə xətası'))); renderUsersList(); }
       });
+    } else {
+      afterRename(oldKey);
     }
   } else {
     if (!pass) { showToast(interfaceLang==='en'?'Password is required':'Şifrə tələb olunur'); return; }

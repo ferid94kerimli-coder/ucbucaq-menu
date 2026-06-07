@@ -796,6 +796,38 @@ def api_update_user_email(username):
             print('[EMAIL UPDATE RESET ERROR]', traceback.format_exc())
     return jsonify({'ok': True, 'email_sent': email_sent})
 
+@app.route('/api/users/<username>/rename', methods=['PUT'])
+@superadmin_required
+def api_rename_user(username):
+    import re
+    data = request.json or {}
+    new_username = data.get('new_username', '').strip().lower()
+    if not new_username:
+        return jsonify({'error': 'Yeni istifadəçi adı tələb olunur'}), 400
+    if new_username == username:
+        return jsonify({'ok': True})
+    if not re.match(r'^[a-z0-9_]{3,30}$', new_username):
+        return jsonify({'error': 'İstifadəçi adı 3-30 simvol, yalnız kiçik hərf/rəqəm/alt xətt'}), 400
+    if username == current_user():
+        return jsonify({'error': 'Öz adınızı dəyişə bilməzsiniz'}), 400
+    users = load_users()
+    if username not in users:
+        return jsonify({'error': 'İstifadəçi tapılmadı'}), 404
+    if users[username].get('role') == 'superadmin':
+        return jsonify({'error': 'Superadmin adını dəyişmək olmaz'}), 403
+    if new_username in users:
+        return jsonify({'error': 'Bu istifadəçi adı artıq mövcuddur'}), 400
+    with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET username = %s WHERE username = %s", (new_username, username))
+        cur.execute("UPDATE user_data SET username = %s WHERE username = %s", (new_username, username))
+    _invalidate_users_cache()
+    _invalidate_cache(new_username)
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    log_action(current_user(), 'rename_user', {'old': username, 'new': new_username}, ip)
+    threading.Thread(target=_push_static_menu_async, args=(new_username,), daemon=True).start()
+    return jsonify({'ok': True})
+
 @app.route('/api/users/<username>/info', methods=['GET'])
 @login_required
 def api_get_user_info(username):
