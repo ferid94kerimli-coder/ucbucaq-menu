@@ -189,17 +189,29 @@ def _get_pool():
 
 @contextlib.contextmanager
 def db_conn():
-    """Pool-dan connection götür, commit et, qaytar."""
+    """Pool-dan connection götür, commit et, qaytar. Köhnəlmiş connection-u avtomatik yenilər."""
     pool = _get_pool()
     conn = pool.getconn()
     try:
+        # Bağlantının canlı olduğunu yoxla, köhnəlmişsə yenilə
+        try:
+            conn.cursor().execute("SELECT 1")
+        except Exception:
+            pool.putconn(conn, close=True)
+            conn = pool.getconn()
         yield conn
         conn.commit()
     except Exception:
-        conn.rollback()
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         raise
     finally:
-        pool.putconn(conn)
+        try:
+            pool.putconn(conn)
+        except Exception:
+            pass
 
 # ────────────────────────────────────────────────────────────────
 # DEFAULT MENYU STRUKTURU
