@@ -176,15 +176,68 @@ input[type=file] { display:none; }
 
 /* ── MOBILE ── */
 @media(max-width:768px){
+  /* Layout */
   .sidebar{ display:none; }
-  .main{ margin-left:0; padding:0.75rem; max-width:100vw; padding-bottom:80px; }
-  .form-grid{ grid-template-columns:1fr; }
-  .page-header{ flex-wrap:wrap; gap:8px; }
-  .stats-grid{ grid-template-columns:1fr 1fr; gap:8px; }
-  .card{ padding:1rem; }
-  .btn{ font-size:0.82rem; padding:0.5rem 0.9rem; }
-  .modal-content{ width:96vw; max-width:96vw; padding:1.25rem; }
-  table{ font-size:0.78rem; }
+  .main{ margin-left:0; padding:0.65rem; max-width:100vw; padding-bottom:72px; overflow-x:hidden; }
+
+  /* Header */
+  .page-header{ flex-wrap:wrap; gap:8px; margin-bottom:1rem; }
+  .page-title{ font-size:1.1rem; }
+
+  /* Cards */
+  .card{ padding:0.85rem; margin-bottom:0.65rem; border-radius:12px; }
+
+  /* Stats */
+  .stats-grid{ grid-template-columns:1fr 1fr; gap:8px; margin-bottom:1rem; }
+  .stat-card{ padding:0.75rem 1rem; }
+  .stat-value{ font-size:1.4rem; }
+
+  /* Forms */
+  .form-grid{ grid-template-columns:1fr; gap:10px; }
+  input[type=text],input[type=tel],input[type=number],textarea,select,input[type=password]{
+    font-size:16px; /* iOS zoom önlə */ padding:0.65rem 0.75rem;
+  }
+  .save-bar{ flex-direction:column; gap:8px; }
+  .save-bar .btn{ width:100%; text-align:center; justify-content:center; }
+
+  /* Buttons */
+  .btn{ font-size:0.85rem; padding:0.55rem 1rem; min-height:40px; }
+  .btn-sm{ font-size:0.78rem; padding:0.4rem 0.7rem; min-height:34px; }
+
+  /* Table → card list on mobile */
+  .items-table thead{ display:none; }
+  .items-table, .items-table tbody, .items-table tr, .items-table td{ display:block; width:100%; }
+  .items-table tr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin-bottom:8px; padding:0.75rem;
+    position:relative;
+  }
+  .items-table td{ border:none; padding:2px 0; font-size:0.83rem; }
+  .items-table td:first-child{ padding-bottom:6px; }
+  .items-table .actions{
+    position:absolute; top:0.75rem; right:0.75rem;
+    flex-direction:column; gap:4px;
+  }
+  .items-table .actions .btn{ min-height:30px; padding:0.3rem 0.6rem; font-size:0.72rem; }
+  .item-cell{ gap:8px; }
+  .item-thumb{ width:44px; height:44px; flex-shrink:0; }
+
+  /* Category tabs */
+  .cat-tabs{ gap:6px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; }
+  .cat-tab{ white-space:nowrap; flex-shrink:0; }
+
+  /* Drawer */
+  .drawer-overlay{ align-items:flex-end; }
+  .drawer{
+    width:100%; max-width:100%; border-radius:20px 20px 0 0;
+    max-height:85vh; padding:1.25rem;
+  }
+
+  /* Toast — mob nav üstündə görsənsin */
+  .toast{ bottom:80px; right:0.75rem; left:0.75rem; text-align:center; }
+
+  /* Confirm modal */
+  #confirm-modal > div{ width:92vw !important; }
 }
 
 /* ── MOBİL ALT NAVİQASİYA ── */
