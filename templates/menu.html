@@ -777,7 +777,6 @@
     <h1 id="cafe-name"></h1>
     <p id="cafe-sub"></p>
     <div id="social-bar" style="display:flex;gap:8px;justify-content:center;margin-top:6px;flex-wrap:wrap;position:relative;z-index:1"></div>
-    <div id="wifi-bar" style="display:none;margin-top:8px;position:relative;z-index:1"></div>
     <div id="hours-badge" style="display:none;margin-top:10px;position:relative;z-index:1"></div>
   </div>
 
@@ -826,6 +825,21 @@
         <span class="cart-total-val" id="cart-total">0.00 ₼</span>
       </div>
       <button class="btn-clear-cart" onclick="confirmClearCart()">Səbəti təmizlə</button>
+    </div>
+  </div>
+</div>
+
+<!-- WIFI POPUP -->
+<div id="wifi-popup" onclick="if(event.target===this)closeWifiPopup()" style="display:none;position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;background:rgba(20,12,8,0.55);backdrop-filter:blur(5px);padding:1.5rem">
+  <div style="background:var(--card);border-radius:22px;width:100%;max-width:320px;padding:1.75rem 1.5rem 1.5rem;position:relative;animation:popIn 0.22s cubic-bezier(0.34,1.2,0.64,1) both;border:1px solid var(--border)">
+    <button onclick="closeWifiPopup()" style="position:absolute;top:0.9rem;right:0.9rem;background:rgba(255,255,255,0.08);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;color:var(--text);font-size:0.9rem;display:flex;align-items:center;justify-content:center">✕</button>
+    <div style="text-align:center;margin-bottom:1.1rem">
+      <div style="font-size:2rem;margin-bottom:6px">📶</div>
+      <div id="wifi-popup-title" style="font-weight:700;font-size:1rem;color:var(--text)">WiFi</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:0.9rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--border)">
+      <span id="wifi-popup-pw" style="font-size:1rem;font-weight:600;color:var(--text);letter-spacing:0.5px;word-break:break-all"></span>
+      <button id="wifi-copy-btn" onclick="copyWifiPw()" style="flex-shrink:0;background:var(--accent);border:none;border-radius:10px;padding:6px 14px;color:#fff;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity 0.2s">Kopyala</button>
     </div>
   </div>
 </div>
@@ -1039,6 +1053,24 @@ function openModal(item) {
 function closeModal(e) {
   if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
 }
+
+function openWifiPopup() {
+  const cafe = getCafe();
+  document.getElementById('wifi-popup-pw').textContent = cafe.wifi || '';
+  document.getElementById('wifi-copy-btn').textContent = lang === 'az' ? 'Kopyala' : 'Copy';
+  const popup = document.getElementById('wifi-popup');
+  popup.style.display = 'flex';
+}
+function closeWifiPopup() {
+  document.getElementById('wifi-popup').style.display = 'none';
+}
+function copyWifiPw() {
+  const pw = document.getElementById('wifi-popup-pw').textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(pw);
+  const btn = document.getElementById('wifi-copy-btn');
+  btn.textContent = '✓';
+  setTimeout(function(){ btn.textContent = lang === 'az' ? 'Kopyala' : 'Copy'; }, 1500);
+}
 function closeModalDirect() {
   document.getElementById('modal-overlay').classList.remove('open');
   document.body.style.overflow = '';
@@ -1100,35 +1132,14 @@ function render() {
   if (cafe.maps) {
     socialBar.innerHTML += `<a href="${cafe.maps}" target="_blank" style="${iconBtn}" title="${lang==='az'?'Xəritə':'Map'}">${mapSVG}</a>`;
   }
-
-  // WiFi bar
-  const wifiBar = document.getElementById('wifi-bar');
-  wifiBar.innerHTML = '';
   if (cafe.wifi) {
-    wifiBar.style.display = 'flex';
-    const copyLabel = lang === 'az' ? 'Kopyala' : 'Copy';
-    const pill = document.createElement('div');
-    pill.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;backdrop-filter:blur(6px);background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:0.78rem;user-select:none';
-    const wifiSvgNS = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(wifiSvgNS,'svg');
-    svg.setAttribute('width','14'); svg.setAttribute('height','14'); svg.setAttribute('viewBox','0 0 24 24');
-    svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2.2');
-    svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
-    svg.innerHTML = '<path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>';
-    const lbl = document.createElement('span'); lbl.style.opacity='0.75'; lbl.textContent='WiFi:';
-    const pw = document.createElement('span'); pw.style.cssText='font-weight:600;letter-spacing:0.4px'; pw.textContent=cafe.wifi;
-    const cpBtn = document.createElement('span');
-    cpBtn.style.cssText='opacity:0.6;font-size:0.72rem;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,0.15)';
-    cpBtn.textContent = copyLabel;
-    pill.appendChild(svg); pill.appendChild(lbl); pill.appendChild(pw); pill.appendChild(cpBtn);
-    pill.onclick = function() {
-      if (navigator.clipboard) navigator.clipboard.writeText(cafe.wifi);
-      cpBtn.textContent = '✓';
-      setTimeout(function(){ cpBtn.textContent = copyLabel; }, 1500);
-    };
-    wifiBar.appendChild(pill);
-  } else {
-    wifiBar.style.display = 'none';
+    const wifiSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`;
+    const wifiBtn = document.createElement('button');
+    wifiBtn.setAttribute('style', iconBtn + ';border:none;cursor:pointer;');
+    wifiBtn.title = 'WiFi';
+    wifiBtn.innerHTML = wifiSVG;
+    wifiBtn.onclick = openWifiPopup;
+    socialBar.appendChild(wifiBtn);
   }
 
   // Hours badge
