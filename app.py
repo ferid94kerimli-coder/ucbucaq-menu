@@ -420,30 +420,6 @@ def index():
 def menu():
     return render_template('menu.html', menu_user='')
 
-@app.route('/qr/<username>')
-def qr_splash(username):
-    users = load_users()
-    if username not in users:
-        return redirect(url_for('menu_user', username=username))
-    cached = _get_cached_data(username)
-    if cached is None:
-        cached = load_user_data(username)
-        _set_cached_data(username, cached)
-    cafe = cached.get('cafe', {})
-    cafe_name = cafe.get('nameAz') or cafe.get('nameEn') or username
-    cafe_logo = cafe.get('logo', '')
-    if cafe_logo and cafe_logo.startswith('data:'):
-        cafe_logo = ''
-    cafe_icon = cafe.get('icon') or '🍽️'
-    resp = make_response(render_template('splash.html',
-        username=username,
-        cafe_name=cafe_name,
-        cafe_logo=cafe_logo,
-        cafe_icon=cafe_icon
-    ))
-    resp.headers['Cache-Control'] = 'no-store'
-    return resp
-
 @app.route('/menu/<username>')
 def menu_user(username):
     users = load_users()
