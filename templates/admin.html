@@ -276,7 +276,7 @@ input[type=file] { display:none; }
 .mob-nav-btn:active{ background:rgba(255,255,255,0.08); }
 
 @media(max-width:768px){
-  .mobile-nav{ display:block; }
+  .mobile-nav.visible{ display:block; }
 }
 </style>
 </head>
@@ -1102,6 +1102,7 @@ function doLogin() {
   });
 }
 function showAdminUI(username, role) {
+  document.getElementById('mobile-nav') && document.getElementById('mobile-nav').classList.add('visible');
   document.getElementById('session-badge').style.display = 'flex';
   document.getElementById('session-name').textContent = username.charAt(0).toUpperCase() + username.slice(1);
   document.getElementById('session-avatar').textContent = username.charAt(0).toUpperCase();
