@@ -369,7 +369,7 @@ input[type=file] { display:none; }
           <p data-i18n="logoTip" style="font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem">Tövsiyə: kvadrat format, minimum 200×200px, PNG və ya JPG.</p>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <label for="admin-logo-file" id="label-logo-upload" style="display:inline-block;padding:0.5rem 1rem;background:var(--accent);color:#fff;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:500">🖼️ Şəkil seç</label>
-            <input type="file" id="admin-logo-file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display:none">
+            <input type="file" id="admin-logo-file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display:none" onchange="adminUploadLogo(this)">
             <button class="btn btn-danger btn-sm" id="admin-logo-del-btn" onclick="adminDeleteLogo()" style="display:none">🗑 Sil</button>
           </div>
         </div>
