@@ -1013,8 +1013,8 @@ function showAdminUI(username, role) {
     el.style.display = isSuperAdmin ? (el.classList.contains('drawer-overlay') ? 'none' : 'block') : 'none';
   });
 
-  // Menyu önizləmə linklərini yenilə
-  var previewUrl = '/menu/' + username;
+  // Menyu önizləmə linklərini Cloudflare URL-ə yönləndir
+  var previewUrl = getMyMenuUrl();
   var dashLink = document.getElementById('preview-menu-link');
   var sideLink = document.getElementById('sidebar-preview-link');
   if (dashLink) dashLink.href = previewUrl;
