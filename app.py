@@ -1143,7 +1143,7 @@ def api_export_data():
 
 @app.route('/api/data/import', methods=['POST'])
 @login_required
-def api_import_data():
+def api_restore_data():
     username = current_user()
     incoming = request.json
     if not isinstance(incoming, dict):
