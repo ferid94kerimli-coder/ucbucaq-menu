@@ -261,18 +261,19 @@ input[type=file] { display:none; }
   flex-direction:column;
   align-items:center;
   gap:2px;
-  padding:6px 10px;
+  padding:6px 4px;
   border:none;
   background:none;
   color:rgba(255,255,255,0.5);
   cursor:pointer;
-  font-size:0.62rem;
+  font-size:0.56rem;
   font-family:inherit;
   border-radius:10px;
   transition:color 0.18s;
   -webkit-tap-highlight-color:transparent;
+  flex:1;
 }
-.mob-nav-btn .mob-icon{ font-size:1.3rem; line-height:1; }
+.mob-nav-btn .mob-icon{ font-size:1.2rem; line-height:1; }
 .mob-nav-btn.active{ color:#fff; }
 .mob-nav-btn:active{ background:rgba(255,255,255,0.08); }
 
@@ -3488,6 +3489,9 @@ applyI18n(interfaceLang);
     </button>
     <button class="mob-nav-btn" id="mobnav-qr" onclick="showPage('qr',this);updateMobNav('qr')">
       <span class="mob-icon">📷</span><span>QR Kod</span>
+    </button>
+    <button class="mob-nav-btn" id="mobnav-analytics" onclick="showPage('analytics',this);updateMobNav('analytics')">
+      <span class="mob-icon">📈</span><span>Statistika</span>
     </button>
     <button class="mob-nav-btn" id="mobnav-settings" onclick="showPage('settings',this);updateMobNav('settings')">
       <span class="mob-icon">⚙️</span><span>Ayarlar</span>
