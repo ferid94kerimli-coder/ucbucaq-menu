@@ -173,9 +173,9 @@ if not _mail_user or not _mail_pass:
     )
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_USERNAME'] = _mail_user
 app.config['MAIL_PASSWORD'] = _mail_pass
 app.config['MAIL_DEFAULT_SENDER'] = ('QR Menu', _mail_user)
